@@ -2,32 +2,80 @@ import pygame
 import sys
 import random
 import time
+from enum import Enum
 
+class Scene(Enum):
+    MAIN_MENU = 0,
+    GAME = 1,
+    GAME_OVER = 2
+
+class MainMenu():
+    def __init__(self):
+        pass
+
+    def draw(self):
+        pass
+
+
+class Game():
+    def __init__(self):
+        pass
+
+    def draw(self):
+        pass
+
+
+class GameOver():
+    def __init__(self):
+        pass
+
+    def draw(self):
+        pass
+
+class StateManager:
+    def __init__(self, screen):
+        self.screen = screen
+        self.main_menu = MainMenu()
+        self.game = Game()
+        self.game_over = GameOver()
+        self.current_scene = Scene.MAIN_MENU
+        # images...
+        # sounds...
+
+    def set_scene(self, scene):
+        self.current_scene = scene
+
+    def get_event(self, event: pygame.event):
+        pass
+
+    def draw(self):
+        if self.current_scene == Scene.MAIN_MENU:
+            self.main_menu.draw()
+        elif self.current_scene == Scene.GAME:
+            self.game.draw()
+        elif self.current_scene == Scene.GAME_OVER:
+            self.game_over.draw()
 
 def main():
-    # turn on pygame
     pygame.init()
 
-    # create a screen
-    pygame.display.set_caption("Cool Project")
-    # TODO: Change the size of the screen as you see fit!
+    pygame.display.set_caption("Tank Tower Defense")
     screen = pygame.display.set_mode((640, 480))
 
-    # let's set the framerate
+    state_manager = StateManager(screen)
+
     clock = pygame.time.Clock()
+
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
+            state_manager.get_event(event)
 
-            # TODO: Add you events code
+        state_manager.draw()
 
-        # TODO: Fill the screen with whatever background color you like!
-        screen.fill((255, 255, 255))
+        pygame.display.flip()
 
-        # TODO: Add your project code
-
-        # don't forget the update, otherwise nothing will show up!
-        pygame.display.update()
+        clock.tick(60)
 
 main()
