@@ -9,24 +9,36 @@ class Scene(Enum):
     GAME = 1,
     GAME_OVER = 2
 
-class MainMenu():
+class MainMenu:
     def __init__(self):
+        pass
+
+    def get_event(self, event):
+        pass
+
+    def draw(self):
+        pass
+
+class Map:
+    pass
+
+class Game:
+    def __init__(self):
+        self.map = Map()
+        self.game_active = True
+
+    def get_event(self, event):
         pass
 
     def draw(self):
         pass
 
 
-class Game():
+class GameOver:
     def __init__(self):
         pass
 
-    def draw(self):
-        pass
-
-
-class GameOver():
-    def __init__(self):
+    def get_event(self, event):
         pass
 
     def draw(self):
@@ -45,8 +57,13 @@ class StateManager:
     def set_scene(self, scene):
         self.current_scene = scene
 
-    def get_event(self, event: pygame.event):
-        pass
+    def get_event(self, event):
+        if self.current_scene == Scene.MAIN_MENU:
+            self.main_menu.get_event(event)
+        elif self.current_scene == Scene.GAME:
+            self.game.get_event(event)
+        elif self.current_scene == Scene.GAME_OVER:
+            self.game_over.get_event(event)
 
     def draw(self):
         if self.current_scene == Scene.MAIN_MENU:
