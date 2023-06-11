@@ -11,25 +11,30 @@ font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
 
+
 # Enums
 class State(Enum):
     """Holds a cell's state, open or occupied"""
     OPEN = 0,
     BLOCKED = 1
 
+
 class TrackingMode(Enum):
     NONE = 0,
     ANGLE = 1,
     POSITION = 2
+
 
 # Helper functions
 def interp(n: int, from1: int, to1: int, from2: int, to2: int):
     """Interpolates a number from one range to another range"""
     return (n - from1) / (to1 - from1) * (to2 - from2) + from2
 
+
 def equals(a: float, b: float, within: float):
     """Checks if two numbers are equal within a certain tolerance."""
     return abs(a - b) <= within
+
 
 # Game classes
 class Cell:
@@ -46,6 +51,7 @@ class Cell:
         if self.highlighted:
             color = (255, 0, 0)
         pygame.draw.rect(self.screen, color, rect)
+
 
 class Tank:
     def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
@@ -79,7 +85,8 @@ class Tank:
                 self.rotate_instant(self.target_angle)
 
                 center = self.get_center()
-                dist = math.sqrt(math.pow(center[0] - self.target_pos[0], 2) + math.pow(center[1] - self.target_pos[1], 2))
+                dist = math.sqrt(
+                    math.pow(center[0] - self.target_pos[0], 2) + math.pow(center[1] - self.target_pos[1], 2))
                 close = equals(0, dist, self.speed * 1.1)
                 if close:
                     self.move_instant((self.target_pos[0] + self.size / 2, self.target_pos[1] + self.size / 2))
@@ -124,11 +131,13 @@ class Tank:
     def rotate_instant(self, angle: float):
         self.angle = angle
 
+
 class Turret:
     def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface,
                  turret_rot_speed: float = 3, angle: float = 0, size: int = -1):
         self.screen = screen
         self.tank = parent_tank
+        self.fire = Fire(screen, self, pygame.image.load("fire_image"))
         self.image = default_image
         self.pos_offset = (0, 0)
         self.angle_offset = angle
@@ -168,8 +177,24 @@ class Turret:
         center = self.get_center()
         self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0]))
 
+
+class Fire:
+    def __init__(self, screen: pygame.Surface, parent_turret: Turret, image: pygame.Surface, size: int = -1):
+        self.screen = screen
+        self.turret = parent_turret
+        self.image = image
+        self.size = size
+
+    def draw(self):
+        center = self.turret.get_center()
+        rotated = pygame.transform.rotate(self.image, self.turret.get_angle())
+        centered_rect = rotated.get_rect(center=(center[0], center[1]))
+        self.screen.blit(rotated, centered_rect)
+
+
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
+
     def __init__(self, screen: pygame.Surface, size: int = 32):
         self.screen = screen
         self.size = size
@@ -209,15 +234,18 @@ class Map:
     def index_to_rect(self, index: int) -> tuple[int, int]:
         return index // self.size, index % self.size
 
+
 class Game:
     """Handles the gameplay, delegation, and processes most events"""
+
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
         self.game_active = True
         self.map = Map(screen)
         self.tanks: list[Tank] = []
 
-        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"), pygame.image.load("../images/Tank_Turret.png")))
+        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"),
+                               pygame.image.load("../images/Tank_Turret.png")))
 
     def get_event(self, event):
         if click:
@@ -250,6 +278,7 @@ class Game:
         for tank in self.tanks:
             tank.draw()
 
+
 class StateManager:
     """Handles menus and the game"""
 
@@ -265,6 +294,7 @@ class StateManager:
     def update(self):
         self.game.update()
         self.game.draw()
+
 
 def main():
     # Global variables that will be set here
