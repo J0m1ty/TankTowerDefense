@@ -137,7 +137,7 @@ class Turret:
                  turret_rot_speed: float = 3, angle: float = 0, size: int = -1):
         self.screen = screen
         self.tank = parent_tank
-        self.fire = Fire(screen, self, pygame.image.load("fire_image"))
+        self.fire = Fire(screen, self, pygame.image.load("../images/Fire.png"))
         self.image = default_image
         self.pos_offset = (0, 0)
         self.angle_offset = angle
@@ -169,6 +169,8 @@ class Turret:
         rotated = pygame.transform.rotate(self.image, self.get_angle())
         centered_rect = rotated.get_rect(center=(center[0], center[1]))
         self.screen.blit(rotated, centered_rect)
+
+        self.fire.draw()
 
     def rotate_by(self, amount: float):
         self.angle_offset += amount
