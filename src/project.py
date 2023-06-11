@@ -11,13 +11,16 @@ font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
 
-
 # Enums
 class State(Enum):
     """Holds a cell's state, open or occupied"""
     OPEN = 0,
     BLOCKED = 1
 
+class TrackingMode(Enum):
+    NONE = 0,
+    ANGLE = 1,
+    POSITION = 2
 
 # Helper functions
 def interp(n: int, from1: int, to1: int, from2: int, to2: int):
@@ -44,59 +47,68 @@ class Cell:
             color = (255, 0, 0)
         pygame.draw.rect(self.screen, color, rect)
 
-
 class Tank:
     def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
-                 turret_image: pygame.Surface, speed: float = 1, angle: float = 0, size: int = 32):
+                 turret_image: pygame.Surface, speed: float = 1, rot_speed: float = 2, turret_rot_speed: float = 3,
+                 angle: float = 0, size: int = 32):
         self.screen = screen
-        self.x = pos[0]
-        self.y = pos[1]
+        self.pos = pos
         self.image = base_image
         self.angle = angle
         self.size = size
-        self.turret = Turret(screen, self, turret_image, angle + 180)
+        self.turret = Turret(screen, self, turret_image, turret_rot_speed)
 
         # Targeting
         self.moving = True
         self.speed = speed
         self.target_pos = pos
+        self.rot_speed = rot_speed
         self.target_angle = self.angle
+
+    def get_angle(self):
+        return 90 - self.angle
+
+    def get_center(self):
+        return self.pos[0] - self.size / 2, self.pos[1] - self.size / 2
 
     def update(self):
         if self.moving:
             sin = math.sin(math.radians(self.target_angle - self.angle))
-            targeted = equals(0, sin, 0.2)
+            targeted = round(sin * 20) / 20 == 0
             if targeted:
                 self.rotate_instant(self.target_angle)
 
-                dist = math.sqrt(math.pow(self.x - self.target_pos[0], 2) + math.pow(self.y - self.target_pos[1], 2))
-                close = equals(0, dist, self.speed * 1.2)
+                center = self.get_center()
+                dist = math.sqrt(math.pow(center[0] - self.target_pos[0], 2) + math.pow(center[1] - self.target_pos[1], 2))
+                close = equals(0, dist, self.speed * 1.1)
                 if close:
-                    self.move_instant(self.target_pos)
+                    self.move_instant((self.target_pos[0] + self.size / 2, self.target_pos[1] + self.size / 2))
                 else:
                     self.move_by(self.speed)
             else:
-                amount = abs(sin) / sin * 3
+                amount = abs(sin) / sin * self.rot_speed
                 self.rotate_by(amount)
 
+            self.turret.update()
+
     def draw(self):
-        rotated = pygame.transform.rotate(self.image, 90 - self.angle)
-        centered_rect = rotated.get_rect(center=(self.x - self.size // 2, self.y - self.size // 2))
+        center = self.get_center()
+        rotated = pygame.transform.rotate(self.image, self.get_angle())
+        centered_rect = rotated.get_rect(center=(center[0], center[1]))
         self.screen.blit(rotated, centered_rect)
         self.turret.draw()
 
     def angle_to_target(self):
-        return math.degrees(math.atan2(self.target_pos[1] - self.y, self.target_pos[0] - self.x))
+        center = self.get_center()
+        return math.degrees(math.atan2(self.target_pos[1] - center[1], self.target_pos[0] - center[0]))
 
     def rotate_by(self, amount: float):
         self.angle += amount
-        self.turret.rotate_by(amount)
 
     def move_by(self, amount: float):
         x = math.cos(math.radians(self.angle))
         y = math.sin(math.radians(self.angle))
-        self.x += x * amount
-        self.y += y * amount
+        self.pos = (self.pos[0] + (x * amount), self.pos[1] + (y * amount))
 
     def move_to(self, pos: tuple[float, float], calculate_angle: bool = True):
         self.target_pos = pos
@@ -107,32 +119,54 @@ class Tank:
         self.target_angle = angle
 
     def move_instant(self, pos: tuple[float, float]):
-        self.x = pos[0]
-        self.y = pos[1]
+        self.pos = pos
 
     def rotate_instant(self, angle: float):
         self.angle = angle
 
 class Turret:
-    def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface, angle: float = 0,
-                 size: int = -1):
+    def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface,
+                 turret_rot_speed: float = 3, angle: float = 0, size: int = -1):
         self.screen = screen
         self.tank = parent_tank
         self.image = default_image
-        self.angle = angle
+        self.pos_offset = (0, 0)
+        self.angle_offset = angle
         self.size = size
-        self.offset = (0, 0)
+
+        # Targeting
+        self.turret_rot_speed = turret_rot_speed
+        self.target_angle = 0
+
+    def get_size(self) -> int:
+        return self.tank.size if self.size == -1 else self.size
+
+    def get_angle(self) -> float:
+        return self.tank.get_angle() + (90 - self.angle_offset) + 180
+
+    def get_center(self) -> tuple[float, float]:
+        size = self.get_size()
+        return (self.tank.pos[0] + self.pos_offset[0]) - size / 2, (self.tank.pos[1] + self.pos_offset[1]) - size / 2
+
+    def update(self):
+        sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
+        targeted = round(sin * 20) / 20 == 0
+        if not targeted:
+            amount = abs(sin) / sin * self.turret_rot_speed
+            self.rotate_by(amount)
 
     def draw(self):
-        size = self.tank.size if self.size == -1 else self.size
-        rotated = pygame.transform.rotate(self.image, 90 - self.angle)
-        centered_rect = rotated.get_rect(
-            center=((self.tank.x + self.offset[0]) - size // 2, (self.tank.y + self.offset[1]) - size // 2))
+        center = self.get_center()
+        rotated = pygame.transform.rotate(self.image, self.get_angle())
+        centered_rect = rotated.get_rect(center=(center[0], center[1]))
         self.screen.blit(rotated, centered_rect)
 
     def rotate_by(self, amount: float):
-        self.angle += amount
+        self.angle_offset += amount
 
+    def aim_at(self, target_pos: tuple[int, int]):
+        center = self.get_center()
+        self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0]))
 
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
@@ -189,7 +223,7 @@ class Game:
         if click:
             pos = self.map.mouse_to_rect(event.pos)
             self.map.grid[pos[0]][pos[1]].highlighted = True
-            self.tanks[0].move_to((random.randint(0, 640), random.randint(0, 640)))
+            self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
 
     def update(self):
         # # Drive tank with keys
@@ -204,6 +238,8 @@ class Game:
         # if keys[pygame.K_d]:
         #     self.tanks[0].turret.rotate_by(2)
 
+        self.tanks[0].turret.aim_at(pygame.mouse.get_pos())
+
         for tank in self.tanks:
             tank.update()
 
@@ -213,7 +249,6 @@ class Game:
 
         for tank in self.tanks:
             tank.draw()
-
 
 class StateManager:
     """Handles menus and the game"""
@@ -230,7 +265,6 @@ class StateManager:
     def update(self):
         self.game.update()
         self.game.draw()
-
 
 def main():
     # Global variables that will be set here
