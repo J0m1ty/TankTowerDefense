@@ -24,6 +24,9 @@ def interp(n: int, from1: int, to1: int, from2: int, to2: int):
     """Interpolates a number from one range to another range"""
     return (n - from1) / (to1 - from1) * (to2 - from2) + from2
 
+def equals(a: float, b: float, within: float):
+    """Checks if two numbers are equal within a certain tolerance."""
+    return abs(a - b) <= within
 
 # Game classes
 class Cell:
@@ -44,14 +47,37 @@ class Cell:
 
 class Tank:
     def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
-                 turret_image: pygame.Surface, angle: int = 0, size: int = 32):
+                 turret_image: pygame.Surface, speed: float = 1, angle: float = 0, size: int = 32):
         self.screen = screen
         self.x = pos[0]
         self.y = pos[1]
         self.image = base_image
         self.angle = angle
         self.size = size
-        self.turret = Turret(screen, self, turret_image, angle)
+        self.turret = Turret(screen, self, turret_image, angle + 180)
+
+        # Targeting
+        self.moving = True
+        self.speed = speed
+        self.target_pos = pos
+        self.target_angle = self.angle
+
+    def update(self):
+        if self.moving:
+            sin = math.sin(math.radians(self.target_angle - self.angle))
+            targeted = equals(0, sin, 0.2)
+            if targeted:
+                self.rotate_instant(self.target_angle)
+
+                dist = math.sqrt(math.pow(self.x - self.target_pos[0], 2) + math.pow(self.y - self.target_pos[1], 2))
+                close = equals(0, dist, self.speed * 1.2)
+                if close:
+                    self.move_instant(self.target_pos)
+                else:
+                    self.move_by(self.speed)
+            else:
+                amount = abs(sin) / sin * 3
+                self.rotate_by(amount)
 
     def draw(self):
         rotated = pygame.transform.rotate(self.image, 90 - self.angle)
@@ -59,19 +85,36 @@ class Tank:
         self.screen.blit(rotated, centered_rect)
         self.turret.draw()
 
-    def rotate(self, amount: int):
-        self.angle += amount
-        self.turret.rotate(amount)
+    def angle_to_target(self):
+        return math.degrees(math.atan2(self.target_pos[1] - self.y, self.target_pos[0] - self.x))
 
-    def move(self, amount: int):
+    def rotate_by(self, amount: float):
+        self.angle += amount
+        self.turret.rotate_by(amount)
+
+    def move_by(self, amount: float):
         x = math.cos(math.radians(self.angle))
         y = math.sin(math.radians(self.angle))
         self.x += x * amount
         self.y += y * amount
 
+    def move_to(self, pos: tuple[float, float], calculate_angle: bool = True):
+        self.target_pos = pos
+        if calculate_angle:
+            self.rotate_to(self.angle_to_target())
+
+    def rotate_to(self, angle: float):
+        self.target_angle = angle
+
+    def move_instant(self, pos: tuple[float, float]):
+        self.x = pos[0]
+        self.y = pos[1]
+
+    def rotate_instant(self, angle: float):
+        self.angle = angle
 
 class Turret:
-    def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface, angle: int = 0,
+    def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface, angle: float = 0,
                  size: int = -1):
         self.screen = screen
         self.tank = parent_tank
@@ -87,13 +130,12 @@ class Turret:
             center=((self.tank.x + self.offset[0]) - size // 2, (self.tank.y + self.offset[1]) - size // 2))
         self.screen.blit(rotated, centered_rect)
 
-    def rotate(self, amount: int):
+    def rotate_by(self, amount: float):
         self.angle += amount
 
 
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
-
     def __init__(self, screen: pygame.Surface, size: int = 32):
         self.screen = screen
         self.size = size
@@ -133,7 +175,6 @@ class Map:
     def index_to_rect(self, index: int) -> tuple[int, int]:
         return index // self.size, index % self.size
 
-
 class Game:
     """Handles the gameplay, delegation, and processes most events"""
     def __init__(self, screen: pygame.Surface):
@@ -142,12 +183,29 @@ class Game:
         self.map = Map(screen)
         self.tanks: list[Tank] = []
 
-        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"), pygame.image.load("../images/Tank_Turret.png"), random.randint(0, 360)))
+        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"), pygame.image.load("../images/Tank_Turret.png")))
 
     def get_event(self, event):
         if click:
             pos = self.map.mouse_to_rect(event.pos)
             self.map.grid[pos[0]][pos[1]].highlighted = True
+            self.tanks[0].move_to((random.randint(0, 640), random.randint(0, 640)))
+
+    def update(self):
+        # # Drive tank with keys
+        # if keys[pygame.K_RIGHT]:
+        #     self.tanks[0].rotate_by(2)
+        # if keys[pygame.K_LEFT]:
+        #     self.tanks[0].rotate_by(-2)
+        # if keys[pygame.K_UP]:
+        #     self.tanks[0].move_by(1)
+        # if keys[pygame.K_a]:
+        #     self.tanks[0].turret.rotate_by(-2)
+        # if keys[pygame.K_d]:
+        #     self.tanks[0].turret.rotate_by(2)
+
+        for tank in self.tanks:
+            tank.update()
 
     def draw(self):
         self.screen.fill((255, 255, 255))
@@ -169,7 +227,8 @@ class StateManager:
     def get_event(self, event):
         self.game.get_event(event)
 
-    def draw(self):
+    def update(self):
+        self.game.update()
         self.game.draw()
 
 
@@ -204,8 +263,8 @@ def main():
                 click = True
             state_manager.get_event(event)
 
-        # Update display
-        state_manager.draw()
+        # Update game
+        state_manager.update()
 
         # Render entire display
         pygame.display.flip()
