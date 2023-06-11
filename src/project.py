@@ -2,9 +2,11 @@ from enum import Enum
 import pygame
 import sys
 import math
+import random
 
 # Global variables
 pygame.font.init()
+state_manager = None
 font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
@@ -26,6 +28,7 @@ def interp(n: int, from1: int, to1: int, from2: int, to2: int):
 # Game classes
 class Cell:
     """A unit of the map, used for holding towers and pathfinding"""
+
     def __init__(self, screen, index):
         self.index = index
         self.state = State.OPEN
@@ -38,8 +41,10 @@ class Cell:
             color = (255, 0, 0)
         pygame.draw.rect(self.screen, color, rect)
 
+
 class Tank:
-    def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface, turret_image: pygame.Surface, angle: int = 0, size: int = 32):
+    def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
+                 turret_image: pygame.Surface, angle: int = 0, size: int = 32):
         self.screen = screen
         self.x = pos[0]
         self.y = pos[1]
@@ -56,6 +61,7 @@ class Tank:
 
     def rotate(self, amount: int):
         self.angle += amount
+        self.turret.rotate(amount)
 
     def move(self, amount: int):
         x = math.cos(math.radians(self.angle))
@@ -63,8 +69,10 @@ class Tank:
         self.x += x * amount
         self.y += y * amount
 
+
 class Turret:
-    def __init__(self, screen, parent_tank: Tank, default_image: pygame.Surface, angle: int = 0, size: int = -1):
+    def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface, angle: int = 0,
+                 size: int = -1):
         self.screen = screen
         self.tank = parent_tank
         self.image = default_image
@@ -75,11 +83,13 @@ class Turret:
     def draw(self):
         size = self.tank.size if self.size == -1 else self.size
         rotated = pygame.transform.rotate(self.image, 90 - self.angle)
-        centered_rect = rotated.get_rect(center=((self.tank.x + self.offset[0]) - size // 2, (self.tank.y + self.offset[1]) - size // 2))
+        centered_rect = rotated.get_rect(
+            center=((self.tank.x + self.offset[0]) - size // 2, (self.tank.y + self.offset[1]) - size // 2))
         self.screen.blit(rotated, centered_rect)
 
     def rotate(self, amount: int):
         self.angle += amount
+
 
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
@@ -131,7 +141,8 @@ class Game:
         self.game_active = True
         self.map = Map(screen)
         self.tanks: list[Tank] = []
-        # self.tanks.append(Tank(screen, (200, 200), ))
+
+        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"), pygame.image.load("../images/Tank_Turret.png"), random.randint(0, 360)))
 
     def get_event(self, event):
         if click:
@@ -164,6 +175,7 @@ class StateManager:
 
 def main():
     # Global variables that will be set here
+    global state_manager
     global click
     global keys
 
@@ -179,14 +191,15 @@ def main():
     state_manager = StateManager(screen)
 
     # Game loop
-    while True:
-        # Update keys
+    run = True
+    while run:
+        # Get actively pressed keys
         keys = pygame.key.get_pressed()
 
         # Get and process events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                sys.exit()
+                run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 click = True
             state_manager.get_event(event)
@@ -202,6 +215,10 @@ def main():
 
         # Reset click frame
         click = False
+
+    # Exit game after loop
+    pygame.quit()
+    sys.exit()
 
 
 main()
