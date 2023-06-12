@@ -30,11 +30,62 @@ def interp(n: int, from1: int, to1: int, from2: int, to2: int):
     """Interpolates a number from one range to another range"""
     return (n - from1) / (to1 - from1) * (to2 - from2) + from2
 
+
 def equals(a: float, b: float, within: float):
     """Checks if two numbers are equal within a certain tolerance."""
     return abs(a - b) <= within
 
+
 # Game classes
+class Game:
+    """Handles the gameplay, delegation, and processes most events"""
+
+    def __init__(self, screen: pygame.Surface):
+        self.screen = screen
+        self.game_active = True
+        self.map = Map(screen)
+        self.tanks: list[Tank] = []
+
+        self.tanks.append(Tank(screen, self, (200, 200), pygame.image.load("../images/Tank_Base.png"),
+                               pygame.image.load("../images/Tank_Turret.png")))
+
+    def get_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pass
+            pos = self.map.pos_to_rect(event.pos)
+            self.map.grid[pos[0]][pos[1]].highlighted = True
+            self.map.grid[pos[0]][pos[1]].state = State.BLOCKED
+            # self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
+            # self.tanks[0].shoot()
+        if event.type == pygame.MOUSEWHEEL:
+            self.map.flood_fill(0, 399)
+
+
+    def update(self):
+        # # Drive tank with keys
+        # if keys[pygame.K_RIGHT]:
+        #     self.tanks[0].rotate_by(2)
+        # if keys[pygame.K_LEFT]:
+        #     self.tanks[0].rotate_by(-2)
+        # if keys[pygame.K_UP]:
+        #     self.tanks[0].move_by(1)
+        # if keys[pygame.K_a]:
+        #     self.tanks[0].turret.rotate_by(-2)
+        # if keys[pygame.K_d]:
+        #     self.tanks[0].turret.rotate_by(2)
+
+        # self.tanks[0].turret.aim_at(pygame.mouse.get_pos())
+
+        for tank in self.tanks:
+            tank.update()
+
+    def draw(self):
+        self.screen.fill((255, 255, 255))
+        self.map.draw()
+
+        for tank in self.tanks:
+            tank.draw()
+
 class Cell:
     """A unit of the map, used for holding towers and pathfinding"""
     def __init__(self, screen, index):
@@ -50,11 +101,15 @@ class Cell:
             color = (255, 0, 0)
         pygame.draw.rect(self.screen, color, rect)
 
+    def __str__(self):
+        return self.index
+
 class Tank:
-    def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
+    def __init__(self, screen: pygame.Surface, game: Game, pos: tuple[int, int], base_image: pygame.Surface,
                  turret_image: pygame.Surface, speed: float = 1, rot_speed: float = 2, turret_rot_speed: float = 3,
                  angle: float = 0, size: int = 32):
         self.screen = screen
+        self.game = game
         self.pos = pos
         self.image = base_image
         self.angle = angle
@@ -66,9 +121,10 @@ class Tank:
         # Targeting
         self.moving = True
         self.speed = speed
-        self.target_pos = pos
+        self.target_pos = self.get_center()
         self.rot_speed = rot_speed
         self.target_angle = self.angle
+        self.auto = True
 
     def get_angle(self):
         return 90 - self.angle
@@ -79,6 +135,9 @@ class Tank:
     def shoot(self):
         self.projectiles.append(Projectile(self.screen, self, 10, 2))
         self.fire_timer = 8
+
+    def closest_cell(self) -> Cell:
+        return self.game.map.get_cell(self.game.map.pos_to_index(self.get_center()))
 
     def update(self):
         if self.moving:
@@ -93,6 +152,13 @@ class Tank:
                 close = equals(0, dist, self.speed * 1.1)
                 if close:
                     self.move_instant((self.target_pos[0] + self.size / 2, self.target_pos[1] + self.size / 2))
+
+                    if self.auto:
+                        cell = self.closest_cell()
+                        path = self.game.map.traverse(cell.index, 399, 1)
+                        if len(path) >= 1:
+                            pos = self.game.map.rect_to_pos(self.game.map.index_to_rect(path[1].index))
+                            self.move_to((pos[0] + self.game.map.size / 2, pos[1] + self.game.map.size / 2))
                 else:
                     self.move_by(self.speed)
             else:
@@ -144,6 +210,7 @@ class Tank:
     def rotate_instant(self, angle: float):
         self.angle = angle
 
+
 class Projectile:
     def __init__(self, screen: pygame.Surface, tank: Tank, speed: float, size: int):
         self.screen = screen
@@ -160,6 +227,7 @@ class Projectile:
         x = self.pos[0] + self.speed * math.cos(math.radians(-90 - self.angle))
         y = self.pos[1] + self.speed * math.sin(math.radians(-90 - self.angle))
         self.pos = (x, y)
+
 
 class Turret:
     def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface,
@@ -188,7 +256,8 @@ class Turret:
 
     def get_barrel(self) -> tuple[float, float]:
         center = self.get_center()
-        return center[0] + (self.tank.size / 2) * math.cos(math.radians(-90 - self.get_angle())), center[1] + (self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
+        return center[0] + (self.tank.size / 2) * math.cos(math.radians(-90 - self.get_angle())), center[1] + (
+                    self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
 
     def update(self):
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
@@ -210,6 +279,7 @@ class Turret:
         center = self.get_center()
         self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0]))
 
+
 class Fire:
     def __init__(self, screen: pygame.Surface, parent_turret: Turret, image: pygame.Surface, size: int = -1):
         self.screen = screen
@@ -223,8 +293,10 @@ class Fire:
         centered_rect = rotated.get_rect(center=(barrel[0], barrel[1]))
         self.screen.blit(rotated, centered_rect)
 
+
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
+
     def __init__(self, screen: pygame.Surface, size: int = 32):
         self.screen = screen
         self.size = size
@@ -234,6 +306,8 @@ class Map:
             self.grid.append([])
             for y in range(0, n):
                 self.grid[x].append(Cell(self.screen, self.rect_to_index((x, y))))
+
+        # self.flood_fill(0, 399)
 
     def get_cell(self, index: int) -> Cell:
         pos = self.index_to_rect(index)
@@ -249,33 +323,36 @@ class Map:
                 rect = (x * self.size, y * self.size, self.size, self.size)
                 self.grid[x][y].draw(rect)
 
-                i = y + x * n
-                text = font.render(f"{self.grid[x][y].value}", True, (0, 0, 0))
+                text = font.render(f"{self.grid[x][y].index}", True, (0, 0, 0))
                 text_rect = text.get_rect(center=(rect[0] + rect[2] / 2, rect[1] + rect[3] / 2))
                 self.screen.blit(text, text_rect)
 
-    def mouse_to_rect(self, mouse_pos: tuple[int, int]) -> tuple[int, int]:
-        x = mouse_pos[0]
-        y = mouse_pos[1]
+    def pos_to_rect(self, pos: tuple[int, int]) -> tuple[int, int]:
+        x = pos[0]
+        y = pos[1]
         return x // self.size, y // self.size
 
     def rect_to_index(self, rect: tuple[int, int]) -> int:
-        return rect[0] * self.size + rect[1]
+        return rect[0] * self.get_rows() + rect[1]
 
-    def mouse_to_index(self, mouse_pos: tuple[int, int]) -> int:
-        return self.rect_to_index(self.mouse_to_rect(mouse_pos))
+    def pos_to_index(self, pos: tuple[float, float]) -> int:
+        return self.rect_to_index(self.pos_to_rect((int(pos[0]), int(pos[1]))))
 
     def index_to_rect(self, index: int) -> tuple[int, int]:
-        return index // self.size, index % self.size
+        return int(index // self.get_rows()), int(index % self.get_rows())
+    
+    def rect_to_pos(self, pos: tuple[int, int]) -> tuple[int, int]:
+        x = math.floor(pos[0] * self.size)
+        y = math.floor(pos[1] * self.size)
+        return x, y
 
     def neighbors(self, pos: tuple[int, int]) -> tuple[int, int, int, int]:
         x = pos[0]
         y = pos[1]
-        left = -1 if x - 1 < 0 else x - 1
-        right = -1 if x + 1 >= self.get_rows() else x + 1
-        up = -1 if y - 1 < 0 else x - 1
-        down = -1 if y + 1 > self.get_rows() else y + 1
-        return left, right, up, down
+        return None if x - 1 < 0 else self.rect_to_index((x - 1, y)), \
+            None if x + 1 >= self.get_rows() else self.rect_to_index((x + 1, y)), \
+            None if y - 1 < 0 else self.rect_to_index((x, y - 1)), \
+            None if y + 1 >= self.get_rows() else self.rect_to_index((x, y + 1))
 
     def flood_fill(self, start: int, end: int):
         starting_cell = self.get_cell(start)
@@ -287,7 +364,7 @@ class Map:
             for cell in cells:
                 neighbors = self.neighbors(self.index_to_rect(cell.index))
                 for neighbor_index in neighbors:
-                    if neighbor_index == -1:
+                    if neighbor_index is None:
                         continue
                     neighbor = self.get_cell(neighbor_index)
                     if neighbor.state != State.BLOCKED and neighbor.value == -1:
@@ -296,65 +373,45 @@ class Map:
                         if neighbor.index == end:
                             run = False
                             break
-                if not run:
+                if run:
+                    cells = next_cells
+                else:
                     break
 
+    def traverse(self, start: int, end: int, max_range: int = -1) -> list[Cell]:
+        start_cell = self.get_cell(start)
+        if start_cell.value == -1:
+            return []
+        end_cell = self.get_cell(end)
+        path: list[Cell] = [start_cell]
+        while True:
+            cell = path[len(path) - 1]
+            valid: list[Cell] = []
+            neighbors = self.neighbors(self.index_to_rect(cell.index))
+            for neighbor_index in neighbors:
+                if neighbor_index is None:
+                    continue
+                neighbor = self.get_cell(neighbor_index)
+                if neighbor.state != State.BLOCKED and neighbor.value == cell.value + 1:
+                    valid.append(neighbor)
 
+            if len(valid) == 0:
+                return []
 
+            closest_neighbor = valid[random.randrange(len(valid))]
+            best_dist = math.inf
+            for neighbor in valid:
+                pos1 = self.index_to_rect(neighbor.index)
+                pos2 = self.index_to_rect(end_cell.index)
+                dist = math.pow(pos2[0] - pos1[0], 2) + math.pow(pos2[1] - pos1[1], 2)
+                if dist < best_dist:
+                    best_dist = dist
+                    closest_neighbor = neighbor
 
+            path.append(closest_neighbor)
 
-
-
-
-
-
-
-
-
-class Game:
-    """Handles the gameplay, delegation, and processes most events"""
-
-    def __init__(self, screen: pygame.Surface):
-        self.screen = screen
-        self.game_active = True
-        self.map = Map(screen)
-        self.tanks: list[Tank] = []
-
-        self.tanks.append(Tank(screen, (200, 200), pygame.image.load("../images/Tank_Base.png"),
-                               pygame.image.load("../images/Tank_Turret.png")))
-
-    def get_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            pass
-            # pos = self.map.mouse_to_rect(event.pos)
-            # self.map.grid[pos[0]][pos[1]].highlighted = True
-            # self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
-            # self.tanks[0].shoot()
-
-    def update(self):
-        # # Drive tank with keys
-        # if keys[pygame.K_RIGHT]:
-        #     self.tanks[0].rotate_by(2)
-        # if keys[pygame.K_LEFT]:
-        #     self.tanks[0].rotate_by(-2)
-        # if keys[pygame.K_UP]:
-        #     self.tanks[0].move_by(1)
-        # if keys[pygame.K_a]:
-        #     self.tanks[0].turret.rotate_by(-2)
-        # if keys[pygame.K_d]:
-        #     self.tanks[0].turret.rotate_by(2)
-
-        # self.tanks[0].turret.aim_at(pygame.mouse.get_pos())
-
-        for tank in self.tanks:
-            tank.update()
-
-    def draw(self):
-        self.screen.fill((255, 255, 255))
-        self.map.draw()
-
-        for tank in self.tanks:
-            tank.draw()
+            if closest_neighbor.index == end or (max_range != -1 and closest_neighbor.value == max_range):
+                return path
 
 class StateManager:
     """Handles menus and the game"""
