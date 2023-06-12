@@ -30,11 +30,9 @@ def interp(n: int, from1: int, to1: int, from2: int, to2: int):
     """Interpolates a number from one range to another range"""
     return (n - from1) / (to1 - from1) * (to2 - from2) + from2
 
-
 def equals(a: float, b: float, within: float):
     """Checks if two numbers are equal within a certain tolerance."""
     return abs(a - b) <= within
-
 
 # Game classes
 class Cell:
@@ -52,7 +50,6 @@ class Cell:
             color = (255, 0, 0)
         pygame.draw.rect(self.screen, color, rect)
 
-
 class Tank:
     def __init__(self, screen: pygame.Surface, pos: tuple[int, int], base_image: pygame.Surface,
                  turret_image: pygame.Surface, speed: float = 1, rot_speed: float = 2, turret_rot_speed: float = 3,
@@ -63,6 +60,8 @@ class Tank:
         self.angle = angle
         self.size = size
         self.turret = Turret(screen, self, turret_image, turret_rot_speed)
+        self.projectiles: list[Projectile] = []
+        self.fire_timer = 0
 
         # Targeting
         self.moving = True
@@ -76,6 +75,10 @@ class Tank:
 
     def get_center(self):
         return self.pos[0] - self.size / 2, self.pos[1] - self.size / 2
+
+    def shoot(self):
+        self.projectiles.append(Projectile(self.screen, self, 10, 2))
+        self.fire_timer = 8
 
     def update(self):
         if self.moving:
@@ -98,12 +101,22 @@ class Tank:
 
             self.turret.update()
 
+            for projectile in self.projectiles:
+                projectile.update()
+
+            if self.fire_timer > 0:
+                self.fire_timer -= 1
+
     def draw(self):
         center = self.get_center()
         rotated = pygame.transform.rotate(self.image, self.get_angle())
         centered_rect = rotated.get_rect(center=(center[0], center[1]))
         self.screen.blit(rotated, centered_rect)
         self.turret.draw()
+        for projectile in self.projectiles:
+            projectile.draw()
+        if self.fire_timer > 0:
+            self.turret.fire.draw()
 
     def angle_to_target(self):
         center = self.get_center()
@@ -131,6 +144,22 @@ class Tank:
     def rotate_instant(self, angle: float):
         self.angle = angle
 
+class Projectile:
+    def __init__(self, screen: pygame.Surface, tank: Tank, speed: float, size: int):
+        self.screen = screen
+        self.tank = tank
+        self.pos = tank.turret.get_barrel()
+        self.angle = tank.turret.get_angle()
+        self.speed = speed
+        self.size = size
+
+    def draw(self):
+        pygame.draw.circle(self.screen, (2, 2, 2), self.pos, self.size)
+
+    def update(self):
+        x = self.pos[0] + self.speed * math.cos(math.radians(-90 - self.angle))
+        y = self.pos[1] + self.speed * math.sin(math.radians(-90 - self.angle))
+        self.pos = (x, y)
 
 class Turret:
     def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface,
@@ -157,6 +186,10 @@ class Turret:
         size = self.get_size()
         return (self.tank.pos[0] + self.pos_offset[0]) - size / 2, (self.tank.pos[1] + self.pos_offset[1]) - size / 2
 
+    def get_barrel(self) -> tuple[float, float]:
+        center = self.get_center()
+        return center[0] + (self.tank.size / 2) * math.cos(math.radians(-90 - self.get_angle())), center[1] + (self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
+
     def update(self):
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
         targeted = round(sin * 20) / 20 == 0
@@ -170,15 +203,12 @@ class Turret:
         centered_rect = rotated.get_rect(center=(center[0], center[1]))
         self.screen.blit(rotated, centered_rect)
 
-        self.fire.draw()
-
     def rotate_by(self, amount: float):
         self.angle_offset += amount
 
     def aim_at(self, target_pos: tuple[int, int]):
         center = self.get_center()
         self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0]))
-
 
 class Fire:
     def __init__(self, screen: pygame.Surface, parent_turret: Turret, image: pygame.Surface, size: int = -1):
@@ -188,15 +218,13 @@ class Fire:
         self.size = size
 
     def draw(self):
-        center = self.turret.get_center()
+        barrel = self.turret.get_barrel()
         rotated = pygame.transform.rotate(self.image, self.turret.get_angle())
-        centered_rect = rotated.get_rect(center=(center[0], center[1]))
+        centered_rect = rotated.get_rect(center=(barrel[0], barrel[1]))
         self.screen.blit(rotated, centered_rect)
-
 
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
-
     def __init__(self, screen: pygame.Surface, size: int = 32):
         self.screen = screen
         self.size = size
@@ -237,6 +265,7 @@ class Map:
         return index // self.size, index % self.size
 
 
+
 class Game:
     """Handles the gameplay, delegation, and processes most events"""
 
@@ -250,10 +279,12 @@ class Game:
                                pygame.image.load("../images/Tank_Turret.png")))
 
     def get_event(self, event):
-        if click:
-            pos = self.map.mouse_to_rect(event.pos)
-            self.map.grid[pos[0]][pos[1]].highlighted = True
-            self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            pass
+            # pos = self.map.mouse_to_rect(event.pos)
+            # self.map.grid[pos[0]][pos[1]].highlighted = True
+            # self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
+            # self.tanks[0].shoot()
 
     def update(self):
         # # Drive tank with keys
@@ -268,7 +299,7 @@ class Game:
         # if keys[pygame.K_d]:
         #     self.tanks[0].turret.rotate_by(2)
 
-        self.tanks[0].turret.aim_at(pygame.mouse.get_pos())
+        # self.tanks[0].turret.aim_at(pygame.mouse.get_pos())
 
         for tank in self.tanks:
             tank.update()
@@ -279,7 +310,6 @@ class Game:
 
         for tank in self.tanks:
             tank.draw()
-
 
 class StateManager:
     """Handles menus and the game"""
