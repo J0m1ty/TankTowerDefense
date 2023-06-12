@@ -37,12 +37,12 @@ def equals(a: float, b: float, within: float):
 # Game classes
 class Cell:
     """A unit of the map, used for holding towers and pathfinding"""
-
     def __init__(self, screen, index):
         self.index = index
         self.state = State.OPEN
         self.highlighted = False
         self.screen = screen
+        self.value = -1
 
     def draw(self, rect):
         color = (255, 255, 255)
@@ -235,6 +235,10 @@ class Map:
             for y in range(0, n):
                 self.grid[x].append(Cell(self.screen, self.rect_to_index((x, y))))
 
+    def get_cell(self, index: int) -> Cell:
+        pos = self.index_to_rect(index)
+        return self.grid[pos[0]][pos[1]]
+
     def get_rows(self):
         return self.screen.get_width() // self.size
 
@@ -246,7 +250,7 @@ class Map:
                 self.grid[x][y].draw(rect)
 
                 i = y + x * n
-                text = font.render(f"{i}", True, (0, 0, 0))
+                text = font.render(f"{self.grid[x][y].value}", True, (0, 0, 0))
                 text_rect = text.get_rect(center=(rect[0] + rect[2] / 2, rect[1] + rect[3] / 2))
                 self.screen.blit(text, text_rect)
 
@@ -263,6 +267,47 @@ class Map:
 
     def index_to_rect(self, index: int) -> tuple[int, int]:
         return index // self.size, index % self.size
+
+    def neighbors(self, pos: tuple[int, int]) -> tuple[int, int, int, int]:
+        x = pos[0]
+        y = pos[1]
+        left = -1 if x - 1 < 0 else x - 1
+        right = -1 if x + 1 >= self.get_rows() else x + 1
+        up = -1 if y - 1 < 0 else x - 1
+        down = -1 if y + 1 > self.get_rows() else y + 1
+        return left, right, up, down
+
+    def flood_fill(self, start: int, end: int):
+        starting_cell = self.get_cell(start)
+        starting_cell.value = 0
+        cells: list[Cell] = [starting_cell]
+        next_cells: list[Cell] = []
+        run = True
+        while run:
+            for cell in cells:
+                neighbors = self.neighbors(self.index_to_rect(cell.index))
+                for neighbor_index in neighbors:
+                    if neighbor_index == -1:
+                        continue
+                    neighbor = self.get_cell(neighbor_index)
+                    if neighbor.state != State.BLOCKED and neighbor.value == -1:
+                        neighbor.value = cell.value + 1
+                        next_cells.append(neighbor)
+                        if neighbor.index == end:
+                            run = False
+                            break
+                if not run:
+                    break
+
+
+
+
+
+
+
+
+
+
 
 
 
