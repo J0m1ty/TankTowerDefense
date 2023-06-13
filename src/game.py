@@ -1,8 +1,8 @@
-from enum import Enum
+from util import *
 import pygame
+import random
 import sys
 import math
-import random
 
 # Global variables
 pygame.font.init()
@@ -12,31 +12,26 @@ click = False
 keys = []
 
 
-# Enums
-class State(Enum):
-    """Holds a cell's state, open or occupied"""
-    OPEN = 0,
-    BLOCKED = 1
+class Cell:
+    """A unit of the map, used for holding towers and pathfinding"""
+
+    def __init__(self, screen, index):
+        self.index = index
+        self.state = State.OPEN
+        self.highlighted = False
+        self.screen = screen
+        self.value = -1
+
+    def draw(self, rect):
+        color = (255, 255, 255)
+        if self.highlighted:
+            color = (255, 0, 0)
+        pygame.draw.rect(self.screen, color, rect)
+
+    def __str__(self):
+        return self.index
 
 
-class TrackingMode(Enum):
-    NONE = 0,
-    ANGLE = 1,
-    POSITION = 2
-
-
-# Helper functions
-def interp(n: int, from1: int, to1: int, from2: int, to2: int):
-    """Interpolates a number from one range to another range"""
-    return (n - from1) / (to1 - from1) * (to2 - from2) + from2
-
-
-def equals(a: float, b: float, within: float):
-    """Checks if two numbers are equal within a certain tolerance."""
-    return abs(a - b) <= within
-
-
-# Game classes
 class Game:
     """Handles the gameplay, delegation, and processes most events"""
 
@@ -46,22 +41,23 @@ class Game:
         self.map = Map(screen)
         self.tanks: list[Tank] = []
 
-        self.tanks.append(Tank(screen, self, (200, 200), pygame.image.load("../images/Tank_Base.png"),
-                               pygame.image.load("../images/Tank_Turret.png")))
-
     def get_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             pass
-            pos = self.map.pos_to_rect(event.pos)
-            self.map.grid[pos[0]][pos[1]].highlighted = True
-            self.map.grid[pos[0]][pos[1]].state = State.BLOCKED
-            # self.tanks[0].move_to((random.randint(100, 300), random.randint(100, 300)))
-            # self.tanks[0].shoot()
-        if event.type == pygame.MOUSEWHEEL:
-            self.map.flood_fill(0, 399)
 
+        if keys[pygame.K_SPACE]:
+            self.tanks.append(Tank(self.screen, self, (random.randrange(100, 300), random.randrange(100, 300)),
+                                   pygame.image.load("../images/Tank_Base.png"),
+                                   pygame.image.load("../images/Tank_Turret.png")))
 
     def update(self):
+        if pygame.mouse.get_pressed()[0]:
+            cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
+            if cell is not None:
+                cell.highlighted = True
+                cell.state = State.BLOCKED
+                self.map.flood_fill(0, 399)
+
         # # Drive tank with keys
         # if keys[pygame.K_RIGHT]:
         #     self.tanks[0].rotate_by(2)
@@ -78,6 +74,11 @@ class Game:
 
         for tank in self.tanks:
             tank.update()
+            # tank.turret.aim_at(pygame.mouse.get_pos())
+            # if keys[pygame.K_RIGHT]:
+            #     tank.rotate_by(2)
+            # if keys[pygame.K_LEFT]:
+            #     tank.rotate_by(-2)
 
     def draw(self):
         self.screen.fill((255, 255, 255))
@@ -86,23 +87,6 @@ class Game:
         for tank in self.tanks:
             tank.draw()
 
-class Cell:
-    """A unit of the map, used for holding towers and pathfinding"""
-    def __init__(self, screen, index):
-        self.index = index
-        self.state = State.OPEN
-        self.highlighted = False
-        self.screen = screen
-        self.value = -1
-
-    def draw(self, rect):
-        color = (255, 255, 255)
-        if self.highlighted:
-            color = (255, 0, 0)
-        pygame.draw.rect(self.screen, color, rect)
-
-    def __str__(self):
-        return self.index
 
 class Tank:
     def __init__(self, screen: pygame.Surface, game: Game, pos: tuple[int, int], base_image: pygame.Surface,
@@ -156,7 +140,7 @@ class Tank:
                     if self.auto:
                         cell = self.closest_cell()
                         path = self.game.map.traverse(cell.index, 399, 1)
-                        if len(path) >= 1:
+                        if len(path) > 1:
                             pos = self.game.map.rect_to_pos(self.game.map.index_to_rect(path[1].index))
                             self.move_to((pos[0] + self.game.map.size / 2, pos[1] + self.game.map.size / 2))
                 else:
@@ -165,13 +149,13 @@ class Tank:
                 amount = abs(sin) / sin * self.rot_speed
                 self.rotate_by(amount)
 
-            self.turret.update()
+        self.turret.update()
 
-            for projectile in self.projectiles:
-                projectile.update()
+        for projectile in self.projectiles:
+            projectile.update()
 
-            if self.fire_timer > 0:
-                self.fire_timer -= 1
+        if self.fire_timer > 0:
+            self.fire_timer -= 1
 
     def draw(self):
         center = self.get_center()
@@ -211,24 +195,6 @@ class Tank:
         self.angle = angle
 
 
-class Projectile:
-    def __init__(self, screen: pygame.Surface, tank: Tank, speed: float, size: int):
-        self.screen = screen
-        self.tank = tank
-        self.pos = tank.turret.get_barrel()
-        self.angle = tank.turret.get_angle()
-        self.speed = speed
-        self.size = size
-
-    def draw(self):
-        pygame.draw.circle(self.screen, (2, 2, 2), self.pos, self.size)
-
-    def update(self):
-        x = self.pos[0] + self.speed * math.cos(math.radians(-90 - self.angle))
-        y = self.pos[1] + self.speed * math.sin(math.radians(-90 - self.angle))
-        self.pos = (x, y)
-
-
 class Turret:
     def __init__(self, screen: pygame.Surface, parent_tank: Tank, default_image: pygame.Surface,
                  turret_rot_speed: float = 3, angle: float = 0, size: int = -1):
@@ -241,6 +207,7 @@ class Turret:
         self.size = size
 
         # Targeting
+        self.idle = True
         self.turret_rot_speed = turret_rot_speed
         self.target_angle = 0
 
@@ -248,7 +215,7 @@ class Turret:
         return self.tank.size if self.size == -1 else self.size
 
     def get_angle(self) -> float:
-        return self.tank.get_angle() + (90 - self.angle_offset) + 180
+        return self.tank.get_angle() - self.angle_offset - 90
 
     def get_center(self) -> tuple[float, float]:
         size = self.get_size()
@@ -257,9 +224,12 @@ class Turret:
     def get_barrel(self) -> tuple[float, float]:
         center = self.get_center()
         return center[0] + (self.tank.size / 2) * math.cos(math.radians(-90 - self.get_angle())), center[1] + (
-                    self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
+                self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
 
     def update(self):
+        if self.idle:
+            self.target_angle = 90 - self.tank.get_angle()
+
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
         targeted = round(sin * 20) / 20 == 0
         if not targeted:
@@ -294,6 +264,24 @@ class Fire:
         self.screen.blit(rotated, centered_rect)
 
 
+class Projectile:
+    def __init__(self, screen: pygame.Surface, tank: Tank, speed: float, size: int):
+        self.screen = screen
+        self.tank = tank
+        self.pos = tank.turret.get_barrel()
+        self.angle = tank.turret.get_angle()
+        self.speed = speed
+        self.size = size
+
+    def draw(self):
+        pygame.draw.circle(self.screen, (2, 2, 2), self.pos, self.size)
+
+    def update(self):
+        x = self.pos[0] + self.speed * math.cos(math.radians(-90 - self.angle))
+        y = self.pos[1] + self.speed * math.sin(math.radians(-90 - self.angle))
+        self.pos = (x, y)
+
+
 class Map:
     """Contains the list of cells in the grid and performs algorithms on them"""
 
@@ -301,13 +289,20 @@ class Map:
         self.screen = screen
         self.size = size
         self.grid: list[list[Cell]] = []
+
         n = self.get_rows()
         for x in range(0, n):
             self.grid.append([])
             for y in range(0, n):
                 self.grid[x].append(Cell(self.screen, self.rect_to_index((x, y))))
 
-        # self.flood_fill(0, 399)
+        self.flood_fill(0, 399)
+
+    def reset_values(self):
+        n = self.get_rows()
+        for x in range(0, n):
+            for y in range(0, n):
+                self.grid[x][y].value = -1
 
     def get_cell(self, index: int) -> Cell:
         pos = self.index_to_rect(index)
@@ -321,9 +316,10 @@ class Map:
         for x in range(0, n):
             for y in range(0, n):
                 rect = (x * self.size, y * self.size, self.size, self.size)
-                self.grid[x][y].draw(rect)
+                cell = self.grid[x][y]
+                cell.draw(rect)
 
-                text = font.render(f"{self.grid[x][y].index}", True, (0, 0, 0))
+                text = font.render(f"{cell.value}", True, (0, 0, 0))
                 text_rect = text.get_rect(center=(rect[0] + rect[2] / 2, rect[1] + rect[3] / 2))
                 self.screen.blit(text, text_rect)
 
@@ -340,27 +336,28 @@ class Map:
 
     def index_to_rect(self, index: int) -> tuple[int, int]:
         return int(index // self.get_rows()), int(index % self.get_rows())
-    
+
     def rect_to_pos(self, pos: tuple[int, int]) -> tuple[int, int]:
         x = math.floor(pos[0] * self.size)
         y = math.floor(pos[1] * self.size)
         return x, y
 
-    def neighbors(self, pos: tuple[int, int]) -> tuple[int, int, int, int]:
+    def neighbors(self, pos: tuple[int, int]) -> list[int, int, int, int]:
         x = pos[0]
         y = pos[1]
-        return None if x - 1 < 0 else self.rect_to_index((x - 1, y)), \
-            None if x + 1 >= self.get_rows() else self.rect_to_index((x + 1, y)), \
-            None if y - 1 < 0 else self.rect_to_index((x, y - 1)), \
-            None if y + 1 >= self.get_rows() else self.rect_to_index((x, y + 1))
+        return [None if x - 1 < 0 else self.rect_to_index((x - 1, y)),
+                None if x + 1 >= self.get_rows() else self.rect_to_index((x + 1, y)),
+                None if y - 1 < 0 else self.rect_to_index((x, y - 1)),
+                None if y + 1 >= self.get_rows() else self.rect_to_index((x, y + 1))]
 
     def flood_fill(self, start: int, end: int):
-        starting_cell = self.get_cell(start)
-        starting_cell.value = 0
-        cells: list[Cell] = [starting_cell]
+        self.reset_values()
+
+        ending_cell = self.get_cell(end)
+        ending_cell.value = 0
+        cells: list[Cell] = [ending_cell]
         next_cells: list[Cell] = []
-        run = True
-        while run:
+        while True:
             for cell in cells:
                 neighbors = self.neighbors(self.index_to_rect(cell.index))
                 for neighbor_index in neighbors:
@@ -370,18 +367,14 @@ class Map:
                     if neighbor.state != State.BLOCKED and neighbor.value == -1:
                         neighbor.value = cell.value + 1
                         next_cells.append(neighbor)
-                        if neighbor.index == end:
-                            run = False
-                            break
-                if run:
-                    cells = next_cells
-                else:
-                    break
+            if len(next_cells) == 0:
+                break
+            else:
+                cells = next_cells
+                next_cells = []
 
     def traverse(self, start: int, end: int, max_range: int = -1) -> list[Cell]:
         start_cell = self.get_cell(start)
-        if start_cell.value == -1:
-            return []
         end_cell = self.get_cell(end)
         path: list[Cell] = [start_cell]
         while True:
@@ -392,7 +385,7 @@ class Map:
                 if neighbor_index is None:
                     continue
                 neighbor = self.get_cell(neighbor_index)
-                if neighbor.state != State.BLOCKED and neighbor.value == cell.value + 1:
+                if neighbor.state == State.OPEN and neighbor.value < cell.value:
                     valid.append(neighbor)
 
             if len(valid) == 0:
@@ -410,8 +403,10 @@ class Map:
 
             path.append(closest_neighbor)
 
-            if closest_neighbor.index == end or (max_range != -1 and closest_neighbor.value == max_range):
+            if closest_neighbor is None or closest_neighbor.index == end or (
+                    max_range != -1 and closest_neighbor.value == max_range):
                 return path
+
 
 class StateManager:
     """Handles menus and the game"""
