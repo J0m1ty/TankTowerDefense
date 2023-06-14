@@ -6,8 +6,7 @@ import math
 
 # Global variables
 pygame.font.init()
-state_manager = None
-font = pygame.font.SysFont("avenir", 16)
+font = pygame.font.SysFont("avenir", 48)
 click = False
 keys = []
 
@@ -41,7 +40,7 @@ class TeamImage:
 
 class TankBase:
     def __init__(self, name: str, images: list[TeamImage], health: int,
-                 speed: int, rotation_speed: int, cost: int, hover: bool):
+                 speed: int, rotation_speed: int, cost: int, hover: bool, display: bool = True):
         self.name = name
         self.images = images
         self.health = health
@@ -49,21 +48,23 @@ class TankBase:
         self.rotation_speed = rotation_speed
         self.cost = cost
         self.hover = hover
+        self.display = display
 
 
 class TankTurret:
-    def __init__(self, name: str, images: list[TeamImage], damage: int, fire_rate: int,
-                 rotation_speed: int, range: int, cost: int, barrels: list[tuple[float, float]],
+    def __init__(self, name: str, images: list[TeamImage], damage: int, fire_cooldown: int,
+                 rotation_speed: int, range: int, cost: int, barrels: list[tuple[float, float]], display: bool = True,
                  projectile_image: None | str = None):
         self.name = name
         self.images = images
         self.damage = damage
-        self.fire_rate = fire_rate
+        self.fire_cooldown = fire_cooldown
         self.rotation_speed = rotation_speed
         self.range = range
         self.cost = cost
         self.projectile_image = projectile_image
         self.barrels = barrels
+        self.display = display
 
 
 class TankData:
@@ -71,19 +72,6 @@ class TankData:
         self.tank_base = tank_base
         self.tank_turret = tank_turret
 
-
-class TowerData:
-    def __init__(self, name: str, images: list[TeamImage], stationary: bool, health: int, damage: int, fire_rate: int,
-                 rotation_speed: int, range: int, cost: int):
-        self.name = name
-        self.images = images
-        self.stationary = stationary
-        self.health = health
-        self.damage = damage
-        self.fire_rate = fire_rate
-        self.rotation_speed = rotation_speed
-        self.range = range
-        self.cost = cost
 
 tank_bases = [
     TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
@@ -101,17 +89,26 @@ tank_turrets = [
                           TeamImage(Team.GREEN, "../images/Tank_Double_Turret.PNG")], 15, 120, 3, 200, 200,
                [(-3, 0), (3, 0)]),
     TankTurret("Rocket", [TeamImage(Team.RED, "../images/Red_Tank_Rocket_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200, [],
+                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200, [], True,
                "../images/Rocket.png")
 ]
 
 towers = [
-    TowerData("Sandbags", [TeamImage(Team.RED, "../images/Red_Sandbag.png"),
-                       TeamImage(Team.GREEN, "../images/Sandbag.png")], True, 50, 0, 0, 0, 0, 15),
-    TowerData("Hedgehog", [TeamImage(Team.RED, "../images/Red_Hedgehog.png"),
-                       TeamImage(Team.GREEN, "../images/Hedgehog.png")], True, 100, 0, 0, 0, 0, 30),
-    TowerData("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
-                       TeamImage(Team.GREEN, "../images/Howitzer.png")], False, 400, 75, 30, 1, 90, 100)
+    TankData(
+        TankBase("Stationary", [], 50, 0, 0, 0, False, False),
+        TankTurret("Sandbags", [TeamImage(Team.RED, "../images/Red_Sandbag.png"),
+                                TeamImage(Team.GREEN, "../images/Sandbag.png")], 0, 0, 0, 0, 15, []),
+    ),
+    TankData(
+        TankBase("Stationary", [], 100, 0, 0, 0, False, False),
+        TankTurret("Hedgehog", [TeamImage(Team.RED, "../images/Red_Hedgehog.png"),
+                                TeamImage(Team.GREEN, "../images/Hedgehog.png")], 0, 0, 0, 0, 30, []),
+    ),
+    TankData(
+        TankBase("Stationary", [], 400, 0, 0, 0, False, False),
+        TankTurret("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
+                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 30, 1, 90, 100, []),
+    ),
 ]
 
 
@@ -126,7 +123,7 @@ class Cell:
         self.value = []
         self.linked_tanks: list[Tank] = []
         self.linked_base: Base | None = None
-        self.linked_tower = None
+        self.linked_tower: Tank | None = None
 
         teams = [team.value for team in Team]
 
@@ -155,7 +152,6 @@ class Game:
         self.bases: list[Base] = []
         self.map = Map(screen, self)
 
-
         self.bases.append(
             Base(screen, pygame.image.load("../images/Base.png"),
                  pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(62), self.map.get_cell(123),
@@ -170,43 +166,34 @@ class Game:
         self.flood_fill()
 
     def get_event(self, event):
-        if keys[pygame.K_SPACE]:
-            print(self.map.print_states())
         pass
 
     def update(self):
         if pygame.mouse.get_pressed()[0]:
             cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
             if cell is not None:
+                self.bases[0].add_tower(2, cell.index)
 
-                if keys[pygame.K_0]:
-                    cell.state = State.OPEN
-                    cell.highlighted = False
-                else:
-                    cell.highlighted = True
-                    cell.state = State.BLOCKED
                 self.flood_fill()
 
         for base in self.bases:
-            if base.health <= 0:
-                pygame.quit()
-                from End_Screen import main
-                print("CHECK 1")
-
-                print("CHECK 2")
             base.update()
 
     def draw(self):
-        self.screen.fill((255, 255, 255))
         self.map.draw()
 
         for base in self.bases:
             base.draw()
 
+        self.buy_menu()
+
     def flood_fill(self):
         self.map.reset_values()
         for base in self.bases:
             base.flood_fill()
+
+    def buy_menu(self):
+        pass
 
 
 class Base:
@@ -221,8 +208,7 @@ class Base:
         self.spawn_cell = spawn_cell
         self.team = team
         self.water_team = water_team
-        self.tanks = []
-        self.turrets = []
+        self.tanks: list[Tank] = []
 
         for cell in self.base_cells():
             cell.state = State.BLOCKED
@@ -231,17 +217,27 @@ class Base:
         self.spawn_timer = 0
         self.spawn_delay = 120
 
-        self.health = 500 # TODO CHANGE BACK TO 5000
+        self.health = 5000
 
-    def add_tower(self, tower_data: TowerData, index: int) -> bool:
+    def add_tower(self, tower: int, index: int) -> bool:
         cell = self.game.map.get_cell(index)
-        if cell.linked_tower is not None:
+        if cell.linked_tower is not None or cell.state != State.OPEN:
             return False
+
+        tank_data = towers[tower]
+        pos = self.game.map.rect_to_pos(self.game.map.index_to_rect(index))
+        pos = (pos[0] + self.game.map.size, pos[1] + self.game.map.size)
+        tank = Tank(self.screen, self, pos, tank_data)
+        tank.linked_cell = cell
+        cell.linked_tower = tank
+        self.tanks.append(tank)
+
+        cell.state = State.BLOCKED
 
     def damage(self, amount: int):
         self.health -= amount
-        if self.health < 5000:
-            print(self.health)
+        if self.health <= 0 and state_manager is not None:
+            state_manager.game_over(self.other_base().team)
 
     def bounding_box(self) -> pygame.Rect:
         size = self.game.map.size
@@ -278,7 +274,7 @@ class Base:
     def update(self):
         if self.spawn_timer <= 0:
             self.spawn_timer = self.spawn_delay
-            self.spawn((0, 0))
+            self.spawn((0, 2))
         else:
             self.spawn_timer -= 1
 
@@ -288,6 +284,10 @@ class Base:
                 cell = tank.closest_cell
                 if cell is not None:
                     cell.linked_tanks.remove(tank)
+                if tank.linked_cell:
+                    tank.linked_cell.state = State.OPEN
+                    tank.linked_cell.linked_tower = None
+                    self.game.flood_fill()
                 self.tanks.remove(tank)
 
     def draw(self):
@@ -302,13 +302,6 @@ class Base:
         for tank in self.tanks:
             tank.draw()
 
-# class Tower:
-#     def __init__(self, screen: pygame.Surface, base: Base, data: TowerData, angle: float = 0, size: int = 32):
-#         self.screen = screen
-#         self.base = base
-#         self.image = pygame.image.load(
-#             list(filter(lambda image: image.team == base.team, data.tank_base.images))[0].url))
-
 
 class Tank:
     def __init__(self, screen: pygame.Surface, base: Base, pos: tuple[int, int],
@@ -316,7 +309,7 @@ class Tank:
 
         self.screen = screen
         self.base = base
-        self.image = pygame.image.load(
+        self.image = None if not data.tank_base.display else pygame.image.load(
             list(filter(lambda image: image.team == base.team, data.tank_base.images))[0].url)
         self.pos = pos
         self.data = data.tank_base
@@ -327,6 +320,7 @@ class Tank:
         self.fire_timer = 0
         self.closest_cell: Cell | None = None
         self.health = data.tank_base.health
+        self.linked_cell: Cell | None = None
 
         # Targeting
         self.moving = True
@@ -349,7 +343,7 @@ class Tank:
     def shoot(self):
         if self.fire_timer <= 0:
             self.projectiles.append(Projectile(self.screen, self, 10, 2))
-            self.fire_timer = 8
+            self.fire_timer = self.turret.data.fire_cooldown
 
     def get_closest_cell(self) -> Cell:
         cell = self.base.game.map.get_cell(self.base.game.map.pos_to_index(self.get_center()))
@@ -411,11 +405,14 @@ class Tank:
             self.fire_timer -= 1
 
     def draw(self):
-        center = self.get_center()
-        rotated = pygame.transform.rotate(self.image, self.get_angle())
-        centered_rect = rotated.get_rect(center=(center[0], center[1]))
-        self.screen.blit(rotated, centered_rect)
+        if self.data.display and self.image is not None:
+            center = self.get_center()
+            rotated = pygame.transform.rotate(self.image, self.get_angle())
+            centered_rect = rotated.get_rect(center=(center[0], center[1]))
+            self.screen.blit(rotated, centered_rect)
+
         self.turret.draw()
+
         for projectile in self.projectiles:
             projectile.draw()
         if self.fire_timer > 0:
@@ -453,7 +450,7 @@ class Tank:
         closest_cell_dist = math.inf
         for cell in enemy_base_cells:
             cell_pos = self.base.game.map.rect_to_pos(self.base.game.map.index_to_rect(cell.index))
-            pos1 = (cell_pos[0] - self.base.game.map.size, cell_pos[1] - self.base.game.map.size)
+            pos1 = (cell_pos[0] + self.base.game.map.size / 2, cell_pos[1] + self.base.game.map.size / 2)
             pos2 = self.get_center()
             dist = math.pow(pos2[0] - pos1[0], 2) + math.pow(pos2[1] - pos1[1], 2)
             if dist < closest_cell_dist:
@@ -478,7 +475,7 @@ class Tank:
             closest_dist = closest_tank_dist
         elif closest_cell is not None and closest_cell_dist < closest_tank_dist:
             cell_pos = self.base.game.map.rect_to_pos(self.base.game.map.index_to_rect(closest_cell.index))
-            target = (cell_pos[0] - self.base.game.map.size, cell_pos[1] - self.base.game.map.size)
+            target = (cell_pos[0] + self.base.game.map.size / 2, cell_pos[1] + self.base.game.map.size / 2)
             closest_dist = closest_cell_dist
 
         if target is not None and closest_dist <= math.pow(self.turret.data.range, 2):
@@ -498,7 +495,7 @@ class Turret:
         self.image = pygame.image.load(
             list(filter(lambda image: image.team == parent_tank.base.team, data.images))[0].url)
         self.pos_offset = (0, 0)
-        self.angle_offset = angle
+        self.angle_offset = random.randrange(360) if self.data.name == "Hedgehog" else angle
         self.size = size
 
         # Targeting
@@ -521,7 +518,7 @@ class Turret:
                 self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
 
     def update(self):
-        if self.idle:
+        if self.idle and self.data.name != "Howitzer":
             self.target_angle = 90 - self.tank.get_angle()
 
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
@@ -531,10 +528,11 @@ class Turret:
             self.rotate_by(amount)
 
     def draw(self):
-        center = self.get_center()
-        rotated = pygame.transform.rotate(self.image, self.get_angle())
-        centered_rect = rotated.get_rect(center=(center[0], center[1]))
-        self.screen.blit(rotated, centered_rect)
+        if self.data.display and self.image is not None:
+            center = self.get_center()
+            rotated = pygame.transform.rotate(self.image, self.get_angle())
+            centered_rect = rotated.get_rect(center=(center[0], center[1]))
+            self.screen.blit(rotated, centered_rect)
 
     def rotate_by(self, amount: float):
         self.angle_offset += amount
@@ -547,17 +545,17 @@ class Turret:
 class Fire:
     def __init__(self, screen: pygame.Surface, parent_turret: Turret, image: pygame.Surface, size: int = -1):
         self.screen = screen
-        self.turret = parent_turret
+        self.turret_or_tower = parent_turret
         self.image = image
         self.size = size
 
     def draw(self):
-        rotated = pygame.transform.rotate(self.image, self.turret.get_angle())
+        rotated = pygame.transform.rotate(self.image, self.turret_or_tower.get_angle())
 
-        barrel = self.turret.get_barrel()
+        barrel = self.turret_or_tower.get_barrel()
         n = 0
-        for offset in self.turret.data.barrels:
-            tangent_angle = (((-self.turret.get_angle()) % 360) + 360) % 360
+        for offset in self.turret_or_tower.data.barrels:
+            tangent_angle = (((-self.turret_or_tower.get_angle()) % 360) + 360) % 360
             tangent_length = math.sqrt(offset[0] ** 2 + offset[1] ** 2)
             barrel_x = barrel[0] + tangent_length * math.cos(math.radians(tangent_angle)) * (-1 if n % 2 == 1 else 1)
             barrel_y = barrel[1] + tangent_length * math.sin(math.radians(tangent_angle)) * (-1 if n % 2 == 1 else 1)
@@ -635,7 +633,6 @@ class Projectile:
                 self.die = True
                 close_base.damage(self.tank.turret.data.damage)
                 return
-
 
 
 class Map:
@@ -813,16 +810,51 @@ class StateManager:
 
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
-        self.game = Game(screen)
-        # images...
-        # sounds...
+        self.game: Game = Game(screen)
+        self.scene = "title"
+        self.winner: str = ""
 
     def get_event(self, event):
-        self.game.get_event(event)
+        if self.scene == "title":
+            if keys[pygame.K_SPACE]:
+                self.scene = "game"
+                self.game = Game(self.screen)
+        elif self.scene == "end":
+            if keys[pygame.K_SPACE]:
+                self.scene = "title"
+        elif self.scene == "game":
+            self.game.get_event(event)
 
     def update(self):
-        self.game.update()
-        self.game.draw()
+        self.screen.fill((255, 255, 255))
+        if self.scene == "title":
+            self.title_screen()
+        elif self.scene == "end":
+            self.end_screen()
+        elif self.scene == "game":
+            self.game.update()
+            self.game.draw()
+
+    def title_screen(self):
+        title = font.render("Tank Tower Defense", True, (2, 2, 2))
+        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
+        button_text = font.render("Press 'SPACE' To Start", True, (2, 2, 2))
+        self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
+
+    def end_screen(self):
+        title = font.render("Game Over", True, (2, 2, 2))
+        win_text = font.render(f"{self.winner} team won!", True, (2, 2, 2))
+        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
+        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
+        self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
+
+    def game_over(self, winner: Team):
+        self.scene = "end"
+        self.winner = winner.name
+
+
+state_manager: StateManager | None = None
 
 
 def main():
@@ -845,7 +877,6 @@ def main():
     # Game loop
     run = True
     while run:
-
         # Get actively pressed keys
         keys = pygame.key.get_pressed()
 
@@ -870,7 +901,6 @@ def main():
         click = False
 
     # Exit game after loop
-    print("do we get here??")
     pygame.quit()
     sys.exit()
 
