@@ -11,7 +11,11 @@ font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
 
-cell_states = [[2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 0, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 0, 0, 0, 0, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 2, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 1, 0, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 1, 2, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2], [1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]]
+cell_states = [[2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2],
+               [2, 2, 2, 2, 2, 0, 0, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2],
+               [2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 0, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 0, 0, 0, 0, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 2, 2, 1, 1, 0, 1, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 2, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 1, 0, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 1, 2, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2], [1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]]
+
+
 
 class TeamImage:
     def __init__(self, team: Team, url: str):
@@ -21,18 +25,19 @@ class TeamImage:
 
 class TankBase:
     def __init__(self, name: str, images: list[TeamImage], health: int,
-                 speed: int, rotation_speed: int, cost: int):
+                 speed: int, rotation_speed: int, cost: int, hover: bool):
         self.name = name
         self.images = images
         self.health = health
         self.speed = speed
         self.rotation_speed = rotation_speed
         self.cost = cost
+        self.hover = hover
 
 
 class TankTurret:
     def __init__(self, name: str, images: list[TeamImage], damage: int, fire_rate: int,
-                 rotation_speed: int, range: int, cost: int):
+                 rotation_speed: int, range: int, cost: int, projectile_image: None | str = None):
         self.name = name
         self.images = images
         self.damage = damage
@@ -40,6 +45,7 @@ class TankTurret:
         self.rotation_speed = rotation_speed
         self.range = range
         self.cost = cost
+        self.projectile_image = projectile_image
 
 
 class TankData:
@@ -50,18 +56,21 @@ class TankData:
 
 tank_bases = [
     TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
-                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100),
+                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100, False),
     TankBase("Tracks", [TeamImage(Team.RED, "../images/Red_Tank_Base.PNG"),
-                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 60, 1, 200),
-    # TankBase("Hover",  [TeamImage(Team.RED, "../images/.PNG"), TeamImage(Team.GREEN, "../images/.PNG")], 150, 85 / 50, 400)
+                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 60, 1, 200, False),
+    TankBase("Hover", [TeamImage(Team.RED, "../images/Red_Hover_Base.PNG"),
+                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 60, 2, 400, True),
 ]
 
 tank_turrets = [
     TankTurret("Single", [TeamImage(Team.RED, "../images/Red_Tank_Turret.PNG"),
                           TeamImage(Team.GREEN, "../images/Tank_Turret.PNG")], 15, 60, 2, 200, 100),
     TankTurret("Double", [TeamImage(Team.RED, "../images/Red_Tank_Double_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Double_Turret.PNG")], 15, 120, 3, 200, 200)
-    # TankTurret("Rocket", [TeamImage(Team.RED, "../images/.PNG"), TeamImage(Team.GREEN, "../images/.PNG")], 100, 30, 3, 400, 200)
+                          TeamImage(Team.GREEN, "../images/Tank_Double_Turret.PNG")], 15, 120, 3, 200, 200),
+    TankTurret("Rocket", [TeamImage(Team.RED, "../images/Red_Tank_Rocket_Turret.PNG"),
+                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200,
+                            "../images/Rocket.png")
 ]
 
 
@@ -73,7 +82,7 @@ class Cell:
         self.state = State.OPEN
         self.highlighted = False
         self.screen = screen
-        self.value = [-1, -1, -1]
+        self.value = []
         self.linked_tanks: list[Tank] = []
         self.linked_base: Base | None = None
         self.linked_tower = None
@@ -81,7 +90,7 @@ class Cell:
         teams = [team.value for team in Team]
 
         for team in teams:
-            self.value[team] = -1
+            self.value.append(-1)
 
     def draw(self, rect: tuple[int, int, int, int], s: pygame.Surface):
         color = (20, 20, 20)
@@ -105,13 +114,15 @@ class Game:
         self.map = Map(screen, self)
 
         self.bases.append(
-            Base(screen, pygame.image.load("../images/Base.png"), self, self.map.get_cell(62), self.map.get_cell(123),
-                 Team.GREEN))
+            Base(screen, pygame.image.load("../images/Base.png"),
+                 pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(62), self.map.get_cell(123),
+                 Team.GREEN, Team.GREEN_WATER))
 
         self.bases.append(
-            Base(screen, pygame.image.load("../images/Red_Base.png"), self, self.map.get_cell(316),
+            Base(screen, pygame.image.load("../images/Red_Base.png"),
+                 pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(316),
                  self.map.get_cell(255),
-                 Team.RED))
+                 Team.RED, Team.RED_WATER))
 
         self.flood_fill()
 
@@ -150,14 +161,17 @@ class Game:
 
 
 class Base:
-    def __init__(self, screen: pygame.Surface, image: pygame.Surface, game: Game, base_cell: Cell, spawn_cell: Cell,
-                 team: Team):
+    def __init__(self, screen: pygame.Surface, image: pygame.Surface, shadow: pygame.Surface, game: Game,
+                 base_cell: Cell, spawn_cell: Cell,
+                 team: Team, water_team: Team):
         self.screen = screen
         self.base_image = image
+        self.base_shadow = shadow
         self.game = game
         self.base_cell = base_cell
         self.spawn_cell = spawn_cell
         self.team = team
+        self.water_team = water_team
         self.tanks = []
 
         base_cell_pos = self.game.map.index_to_rect(self.base_cell.index)
@@ -184,11 +198,12 @@ class Base:
 
     def flood_fill(self):
         self.game.map.flood_fill(self.spawn_cell.index, self.other_base().base_cell.index, self.team)
+        self.game.map.flood_fill(self.spawn_cell.index, self.other_base().base_cell.index, self.water_team)
 
     def update(self):
         if self.spawn_timer <= 0:
             self.spawn_timer = self.spawn_delay
-            self.spawn((0, 0))
+            self.spawn((1, 2))
         else:
             self.spawn_timer -= 1
 
@@ -202,9 +217,11 @@ class Base:
 
     def draw(self):
         base_cell_pos = self.game.map.index_to_rect(self.base_cell.index)
-        base_cell_offset = self.game.map.get_cell(self.game.map.rect_to_index((base_cell_pos[0] - 2, base_cell_pos[1] - 1)))
+        base_cell_offset = self.game.map.get_cell(
+            self.game.map.rect_to_index((base_cell_pos[0] - 2, base_cell_pos[1] - 1)))
 
         pos = self.game.map.rect_to_pos(self.game.map.index_to_rect(base_cell_offset.index))
+        self.screen.blit(self.base_shadow, (pos[0] - 1, pos[1] + 1))
         self.screen.blit(self.base_image, pos)
 
         for tank in self.tanks:
@@ -239,7 +256,7 @@ class Tank:
         self.health -= amount
 
     def bounding_box(self) -> pygame.Rect:
-        return pygame.Rect(self.pos[0], self.pos[1], self.size, self.size)
+        return pygame.Rect(self.pos[0] - self.size, self.pos[1] - self.size, self.size, self.size)
 
     def get_angle(self):
         return 90 - self.angle
@@ -283,9 +300,11 @@ class Tank:
                     self.move_instant((self.target_pos[0] + self.size / 2, self.target_pos[1] + self.size / 2))
 
                     if self.auto:
+                        team = self.base.water_team if self.data.hover else self.base.team
+
                         path = self.base.game.map.traverse(self.closest_cell.index,
                                                            self.base.other_base().base_cell.index,
-                                                           self.base.team, 1)
+                                                           team, 1)
                         if len(path) > 1:
                             pos = self.base.game.map.rect_to_pos(self.base.game.map.index_to_rect(path[1].index))
                             self.move_to((pos[0] + self.base.game.map.size / 2, pos[1] + self.base.game.map.size / 2))
@@ -297,10 +316,15 @@ class Tank:
 
         self.turret.update()
 
+        projectiles_to_remove = []
         for projectile in self.projectiles:
             projectile.update()
             if projectile.die:
-                self.projectiles.remove(projectile)
+                projectiles_to_remove.append(projectile)
+
+        for projectile in projectiles_to_remove:
+            self.projectiles.remove(projectile)
+
 
         if self.fire_timer > 0:
             self.fire_timer -= 1
@@ -441,9 +465,16 @@ class Projectile:
         self.speed = speed
         self.size = size
         self.die = False
+        src = self.tank.turret.data.projectile_image
+        self.image = None if src is None else pygame.image.load(src)
 
     def draw(self):
-        pygame.draw.circle(self.screen, (2, 2, 2), self.pos, self.size)
+        if self.image is not None:
+            rotated = pygame.transform.rotate(self.image, self.angle)
+            center_rect = rotated.get_rect(center=(self.pos[0], self.pos[1]))
+            self.screen.blit(rotated, center_rect)
+        else:
+            pygame.draw.circle(self.screen, (2, 2, 2), self.pos, self.size)
 
     def update(self):
         x = self.pos[0] + self.speed * math.cos(math.radians(-90 - self.angle))
@@ -473,7 +504,7 @@ class Projectile:
             if tank.base.team == self.tank.base.team:
                 continue
             bounding_box = tank.bounding_box()
-            hit = bounding_box.collidepoint(self.pos[0], self.pos[1])
+            hit = bounding_box.colliderect((self.pos[0] - 2, self.pos[1] - 2, 4, 4))
             if hit:
                 self.die = True
                 tank.damage(self.tank.turret.data.damage)
@@ -497,7 +528,6 @@ class Map:
                 cell = Cell(self.screen, self.rect_to_index((x, y)))
                 cell.state = State(cell_states[x][y])
                 self.grid[x].append(cell)
-
 
     def print_states(self):
         output = []
@@ -537,7 +567,7 @@ class Map:
                 cell = self.grid[x][y]
                 cell.draw(rect, s)
 
-                # text = font.render(f"{cell.state.value}", True, (0, 0, 0))
+                # text = font.render(f"{cell.value[Team.GREEN_WATER.value]}", True, (0, 0, 0))
                 # text_rect = text.get_rect(center=(rect[0] + rect[2] / 2, rect[1] + rect[3] / 2))
                 # self.screen.blit(text, text_rect)
 
@@ -581,6 +611,8 @@ class Map:
         return out
 
     def flood_fill(self, start: int, end: int, team: Team):
+        water = team == Team.RED_WATER or team == Team.GREEN_WATER
+
         team = team.value
 
         ending_cell = self.get_cell(end)
@@ -596,7 +628,7 @@ class Map:
                     if neighbor_index is None:
                         continue
                     neighbor = self.get_cell(neighbor_index)
-                    if neighbor.state == State.OPEN and neighbor.value[team] == -1:
+                    if (neighbor.state == State.OPEN or (water and neighbor.state != State.BLOCKED)) and neighbor.value[team] == -1:
                         neighbor.value[team] = cell.value[team] + 1
                         next_cells.append(neighbor)
                         end_cell_blocked = False
@@ -609,6 +641,8 @@ class Map:
                 next_cells = []
 
     def traverse(self, start: int, end: int, team: Team, max_range: int = -1) -> list[Cell]:
+        water = team == Team.RED_WATER or team == Team.GREEN_WATER
+
         team = team.value
 
         start_cell = self.get_cell(start)
@@ -622,7 +656,7 @@ class Map:
                 if neighbor_index is None:
                     continue
                 neighbor = self.get_cell(neighbor_index)
-                if neighbor.state == State.OPEN and neighbor.value[team] < cell.value[team]:
+                if (neighbor.state == State.OPEN or (water and neighbor.state != State.BLOCKED)) and neighbor.value[team] < cell.value[team]:
                     valid.append(neighbor)
 
             if len(valid) == 0:

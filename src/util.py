@@ -23,4 +23,6 @@ class Team(Enum):
     NEUTRAL = 0
     RED = 1
     GREEN = 2
+    RED_WATER = 3
+    GREEN_WATER = 4
 
