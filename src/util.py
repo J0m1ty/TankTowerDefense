@@ -15,6 +15,12 @@ def equals(a: float, b: float, within: float):
 # Enums
 class State(Enum):
     """Holds a cell's state, open or occupied"""
-    OPEN = 0,
-    BLOCKED = 1
+    OPEN = 0
+    WATER = 1
+    BLOCKED = 2
+
+class Team(Enum):
+    NEUTRAL = 0
+    RED = 1
+    GREEN = 2
 
