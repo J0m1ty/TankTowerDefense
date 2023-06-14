@@ -11,6 +11,8 @@ font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
 
+cell_states = [[2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 0, 2, 2, 2], [2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 2, 2, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2], [2, 2, 0, 0, 0, 0, 2, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 2, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 2, 1, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 2, 1, 0, 2, 0, 0, 0, 0, 0, 0, 2, 2], [2, 0, 0, 0, 0, 0, 2, 1, 1, 1, 2, 2, 0, 0, 0, 0, 0, 2, 2, 2], [2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2], [1, 1, 2, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2], [1, 1, 1, 2, 2, 2, 1, 1, 2, 2, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]]
+
 
 class TeamImage:
     def __init__(self, team: Team, url: str):
@@ -82,11 +84,13 @@ class Cell:
         for team in teams:
             self.value[team] = -1
 
-    def draw(self, rect):
-        color = (20, 20, 20, 20)
+    def draw(self, rect: tuple[int, int, int, int], s: pygame.Surface):
+        color = (20, 20, 20)
         if self.highlighted:
             color = (255, 0, 0)
-        pygame.draw.rect(self.screen, color, rect)
+            if self.state == State.WATER:
+                color = (0, 0, 255)
+        pygame.draw.rect(s, color, rect, 1)
 
     def __str__(self):
         return self.index
@@ -102,7 +106,7 @@ class Game:
         self.map = Map(screen, self)
 
         self.bases.append(
-            Base(screen, pygame.image.load("../images/Base.png"), self, self.map.get_cell(83), self.map.get_cell(144),
+            Base(screen, pygame.image.load("../images/Base.png"), self, self.map.get_cell(62), self.map.get_cell(123),
                  Team.GREEN))
 
         self.bases.append(
@@ -113,14 +117,21 @@ class Game:
         self.flood_fill()
 
     def get_event(self, event):
+        if keys[pygame.K_SPACE]:
+            print(self.map.print_states())
         pass
 
     def update(self):
         if pygame.mouse.get_pressed()[0]:
             cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
             if cell is not None:
-                cell.highlighted = True
-                cell.state = State.BLOCKED
+
+                if keys[pygame.K_0]:
+                    cell.state = State.OPEN
+                    cell.highlighted = False
+                else:
+                    cell.highlighted = True
+                    cell.state = State.BLOCKED
                 self.flood_fill()
 
         for base in self.bases:
@@ -478,12 +489,25 @@ class Map:
         self.game = game
         self.size = size
         self.grid: list[list[Cell]] = []
+        self.image = pygame.image.load("../images/Map.png")
 
         n = self.get_rows()
         for x in range(0, n):
             self.grid.append([])
             for y in range(0, n):
-                self.grid[x].append(Cell(self.screen, self.rect_to_index((x, y))))
+                cell = Cell(self.screen, self.rect_to_index((x, y)))
+                cell.state = State(cell_states[x][y])
+                self.grid[x].append(cell)
+
+
+    def print_states(self):
+        output = []
+        n = self.get_rows()
+        for x in range(0, n):
+            output.append([])
+            for y in range(0, n):
+                output[x].append(self.grid[x][y].state.value)
+        return output
 
     def reset_values(self):
         teams = [team.value for team in Team]
@@ -502,16 +526,23 @@ class Map:
         return self.screen.get_width() // self.size
 
     def draw(self):
+        self.screen.blit(self.image, (0, 0))
+
+        s = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
+        s.set_alpha(40)
+
         n = self.get_rows()
         for x in range(0, n):
             for y in range(0, n):
                 rect = (x * self.size, y * self.size, self.size, self.size)
                 cell = self.grid[x][y]
-                cell.draw(rect)
+                cell.draw(rect, s)
 
-                # text = font.render(f"{cell.value[Team.RED.value]}", True, (0, 0, 0))
+                # text = font.render(f"{cell.state.value}", True, (0, 0, 0))
                 # text_rect = text.get_rect(center=(rect[0] + rect[2] / 2, rect[1] + rect[3] / 2))
                 # self.screen.blit(text, text_rect)
+
+        self.screen.blit(s, (0, 0))
 
     def pos_to_rect(self, pos: tuple[float, float]) -> tuple[int, int]:
         return int(pos[0] // self.size), int(pos[1] // self.size)
