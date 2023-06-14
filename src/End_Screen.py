@@ -31,7 +31,7 @@ def main():
         keys = pygame.key.get_pressed()
         title = font.render("Game Over", True, (2, 2, 2))
         screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 200))
-        button_text = font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
+        button_text = font.render("Press 'BACKSPACE' To Return to Menu", True, (2, 2, 2))
         screen.blit(button_text, (screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
         if keys[pygame.K_BACKSPACE]:

@@ -35,6 +35,8 @@ def main():
         screen.blit(button_text, (screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
         if keys[pygame.K_SPACE]:
+            print("SPACE!")
+            pygame.quit()
             import game
         # Get and process events
         for event in pygame.event.get():

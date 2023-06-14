@@ -188,6 +188,12 @@ class Game:
                 self.flood_fill()
 
         for base in self.bases:
+            if base.health <= 0:
+                pygame.quit()
+                from End_Screen import main
+                print("CHECK 1")
+
+                print("CHECK 2")
             base.update()
 
     def draw(self):
@@ -201,6 +207,7 @@ class Game:
         self.map.reset_values()
         for base in self.bases:
             base.flood_fill()
+
 
 class Base:
     def __init__(self, screen: pygame.Surface, image: pygame.Surface, shadow: pygame.Surface, game: Game,
@@ -224,16 +231,17 @@ class Base:
         self.spawn_timer = 0
         self.spawn_delay = 120
 
-        self.health = 5000
+        self.health = 500 # TODO CHANGE BACK TO 5000
 
     def add_tower(self, tower_data: TowerData, index: int) -> bool:
         cell = self.game.map.get_cell(index)
         if cell.linked_tower is not None:
             return False
 
-
     def damage(self, amount: int):
         self.health -= amount
+        if self.health < 5000:
+            print(self.health)
 
     def bounding_box(self) -> pygame.Rect:
         size = self.game.map.size
@@ -300,6 +308,7 @@ class Base:
 #         self.base = base
 #         self.image = pygame.image.load(
 #             list(filter(lambda image: image.team == base.team, data.tank_base.images))[0].url))
+
 
 class Tank:
     def __init__(self, screen: pygame.Surface, base: Base, pos: tuple[int, int],
@@ -836,6 +845,7 @@ def main():
     # Game loop
     run = True
     while run:
+
         # Get actively pressed keys
         keys = pygame.key.get_pressed()
 
@@ -860,6 +870,7 @@ def main():
         click = False
 
     # Exit game after loop
+    print("do we get here??")
     pygame.quit()
     sys.exit()
 
