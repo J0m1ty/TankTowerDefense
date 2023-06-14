@@ -72,6 +72,19 @@ class TankData:
         self.tank_turret = tank_turret
 
 
+class TowerData:
+    def __init__(self, name: str, images: list[TeamImage], stationary: bool, health: int, damage: int, fire_rate: int,
+                 rotation_speed: int, range: int, cost: int):
+        self.name = name
+        self.images = images
+        self.stationary = stationary
+        self.health = health
+        self.damage = damage
+        self.fire_rate = fire_rate
+        self.rotation_speed = rotation_speed
+        self.range = range
+        self.cost = cost
+
 tank_bases = [
     TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
                      TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100, False),
@@ -90,6 +103,15 @@ tank_turrets = [
     TankTurret("Rocket", [TeamImage(Team.RED, "../images/Red_Tank_Rocket_Turret.PNG"),
                           TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200, [],
                "../images/Rocket.png")
+]
+
+towers = [
+    TowerData("Sandbags", [TeamImage(Team.RED, "../images/Red_Sandbag.png"),
+                       TeamImage(Team.GREEN, "../images/Sandbag.png")], True, 50, 0, 0, 0, 0, 15),
+    TowerData("Hedgehog", [TeamImage(Team.RED, "../images/Red_Hedgehog.png"),
+                       TeamImage(Team.GREEN, "../images/Hedgehog.png")], True, 100, 0, 0, 0, 0, 30),
+    TowerData("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
+                       TeamImage(Team.GREEN, "../images/Howitzer.png")], False, 400, 75, 30, 1, 90, 100)
 ]
 
 
@@ -180,7 +202,6 @@ class Game:
         for base in self.bases:
             base.flood_fill()
 
-
 class Base:
     def __init__(self, screen: pygame.Surface, image: pygame.Surface, shadow: pygame.Surface, game: Game,
                  base_cell: Cell, spawn_cell: Cell,
@@ -194,6 +215,7 @@ class Base:
         self.team = team
         self.water_team = water_team
         self.tanks = []
+        self.turrets = []
 
         for cell in self.base_cells():
             cell.state = State.BLOCKED
@@ -204,6 +226,12 @@ class Base:
 
         self.health = 5000
 
+    def add_tower(self, tower_data: TowerData, index: int) -> bool:
+        cell = self.game.map.get_cell(index)
+        if cell.linked_tower is not None:
+            return False
+
+
     def damage(self, amount: int):
         self.health -= amount
 
@@ -213,7 +241,6 @@ class Base:
         corner_cell_pos = (base_cell_pos[0] - 2, base_cell_pos[1] - 1)
         world_pos = self.game.map.rect_to_pos(corner_cell_pos)
         return pygame.Rect(world_pos[0], world_pos[1], size * 5, size * 3)
-
 
     def base_cells(self) -> list[Cell]:
         cells: list[Cell] = []
@@ -267,6 +294,12 @@ class Base:
         for tank in self.tanks:
             tank.draw()
 
+# class Tower:
+#     def __init__(self, screen: pygame.Surface, base: Base, data: TowerData, angle: float = 0, size: int = 32):
+#         self.screen = screen
+#         self.base = base
+#         self.image = pygame.image.load(
+#             list(filter(lambda image: image.team == base.team, data.tank_base.images))[0].url))
 
 class Tank:
     def __init__(self, screen: pygame.Surface, base: Base, pos: tuple[int, int],
