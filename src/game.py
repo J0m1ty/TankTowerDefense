@@ -166,15 +166,13 @@ class Game:
         self.flood_fill()
 
     def get_event(self, event):
-        if keys[pygame.K_SPACE]:
-            print(self.map.print_states())
         pass
 
     def update(self):
         if pygame.mouse.get_pressed()[0]:
             cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
             if cell is not None:
-                self.bases[0].add_tower(1, cell.index)
+                self.bases[0].add_tower(2, cell.index)
 
                 self.flood_fill()
 
