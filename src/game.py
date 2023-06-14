@@ -6,8 +6,7 @@ import math
 
 # Global variables
 pygame.font.init()
-state_manager = None
-font = pygame.font.SysFont("avenir", 16)
+font = pygame.font.SysFont("avenir", 48)
 click = False
 keys = []
 
@@ -66,6 +65,7 @@ class TankTurret:
         self.projectile_image = projectile_image
         self.barrels = barrels
         self.display = display
+
 
 class TankData:
     def __init__(self, tank_base: TankBase, tank_turret: TankTurret):
@@ -174,7 +174,6 @@ class Game:
         if pygame.mouse.get_pressed()[0]:
             cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
             if cell is not None:
-
                 self.bases[0].add_tower(1, cell.index)
 
                 self.flood_fill()
@@ -183,7 +182,6 @@ class Game:
             base.update()
 
     def draw(self):
-        self.screen.fill((255, 255, 255))
         self.map.draw()
 
         for base in self.bases:
@@ -240,6 +238,8 @@ class Base:
 
     def damage(self, amount: int):
         self.health -= amount
+        if self.health <= 0 and state_manager is not None:
+            state_manager.game_over(self.other_base().team)
 
     def bounding_box(self) -> pygame.Rect:
         size = self.game.map.size
@@ -812,16 +812,51 @@ class StateManager:
 
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
-        self.game = Game(screen)
-        # images...
-        # sounds...
+        self.game: Game = Game(screen)
+        self.scene = "title"
+        self.winner: str = ""
 
     def get_event(self, event):
-        self.game.get_event(event)
+        if self.scene == "title":
+            if keys[pygame.K_SPACE]:
+                self.scene = "game"
+                self.game = Game(self.screen)
+        elif self.scene == "end":
+            if keys[pygame.K_SPACE]:
+                self.scene = "title"
+        elif self.scene == "game":
+            self.game.get_event(event)
 
     def update(self):
-        self.game.update()
-        self.game.draw()
+        self.screen.fill((255, 255, 255))
+        if self.scene == "title":
+            self.title_screen()
+        elif self.scene == "end":
+            self.end_screen()
+        elif self.scene == "game":
+            self.game.update()
+            self.game.draw()
+
+    def title_screen(self):
+        title = font.render("Tank Tower Defense", True, (2, 2, 2))
+        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
+        button_text = font.render("Press 'SPACE' To Start", True, (2, 2, 2))
+        self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
+
+    def end_screen(self):
+        title = font.render("Game Over", True, (2, 2, 2))
+        win_text = font.render(f"{self.winner} team won!", True, (2, 2, 2))
+        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
+        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
+        self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
+
+    def game_over(self, winner: Team):
+        self.scene = "end"
+        self.winner = winner.name
+
+
+state_manager: StateManager | None = None
 
 
 def main():
