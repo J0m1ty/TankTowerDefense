@@ -7,6 +7,8 @@ import math
 # Global variables
 pygame.font.init()
 font = pygame.font.SysFont("avenir", 48)
+small_font = pygame.font.SysFont("avenir", 16)
+medium_font = pygame.font.SysFont("avenir", 26)
 click = False
 keys = []
 
@@ -37,10 +39,10 @@ class TeamImage:
         self.team = team
         self.url = url
 
-
 class TankBase:
     def __init__(self, name: str, images: list[TeamImage], health: int,
-                 speed: int, rotation_speed: int, cost: int, hover: bool, display: bool = True):
+                 speed: int, rotation_speed: int, cost: int, hover: bool,
+                 unlock_price: int, display: bool = True):
         self.name = name
         self.images = images
         self.health = health
@@ -48,13 +50,14 @@ class TankBase:
         self.rotation_speed = rotation_speed
         self.cost = cost
         self.hover = hover
+        self.unlock_price = unlock_price
         self.display = display
 
 
 class TankTurret:
     def __init__(self, name: str, images: list[TeamImage], damage: int, fire_cooldown: int,
-                 rotation_speed: int, range: int, cost: int, barrels: list[tuple[float, float]], display: bool = True,
-                 projectile_image: None | str = None):
+                 rotation_speed: int, range: int, cost: int, barrels: list[tuple[float, float]],
+                 unlock_price: int, display: bool = True, projectile_image: None | str = None):
         self.name = name
         self.images = images
         self.damage = damage
@@ -64,6 +67,7 @@ class TankTurret:
         self.cost = cost
         self.projectile_image = projectile_image
         self.barrels = barrels
+        self.unlock_price = unlock_price
         self.display = display
 
 
@@ -75,21 +79,21 @@ class TankData:
 
 tank_bases = [
     TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
-                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100, False),
+                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100, False, 0),
     TankBase("Tracks", [TeamImage(Team.RED, "../images/Red_Tank_Base.PNG"),
-                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 60, 1, 200, False),
+                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 60, 1, 200, False, 300),
     TankBase("Hover", [TeamImage(Team.RED, "../images/Red_Hover_Base.PNG"),
-                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 60, 2, 400, True),
+                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 60, 2, 400, True, 600),
 ]
 
 tank_turrets = [
     TankTurret("Single", [TeamImage(Team.RED, "../images/Red_Tank_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Turret.PNG")], 15, 60, 2, 200, 100, [(0, 0)]),
+                          TeamImage(Team.GREEN, "../images/Tank_Turret.PNG")], 15, 60, 2, 200, 100, [(0, 0)], 0),
     TankTurret("Double", [TeamImage(Team.RED, "../images/Red_Tank_Double_Turret.PNG"),
                           TeamImage(Team.GREEN, "../images/Tank_Double_Turret.PNG")], 15, 120, 3, 200, 200,
-               [(-3, 0), (3, 0)]),
+               [(-3, 0), (3, 0)], 300),
     TankTurret("Rocket", [TeamImage(Team.RED, "../images/Red_Tank_Rocket_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200, [], True,
+                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 30, 3, 400, 200, [], 600, True,
                "../images/Rocket.png")
 ]
 
@@ -97,17 +101,17 @@ towers = [
     TankData(
         TankBase("Stationary", [], 50, 0, 0, 0, False, False),
         TankTurret("Sandbags", [TeamImage(Team.RED, "../images/Red_Sandbag.png"),
-                                TeamImage(Team.GREEN, "../images/Sandbag.png")], 0, 0, 0, 0, 15, []),
+                                TeamImage(Team.GREEN, "../images/Sandbag.png")], 0, 0, 0, 0, 15, [], 0),
     ),
     TankData(
         TankBase("Stationary", [], 100, 0, 0, 0, False, False),
         TankTurret("Hedgehog", [TeamImage(Team.RED, "../images/Red_Hedgehog.png"),
-                                TeamImage(Team.GREEN, "../images/Hedgehog.png")], 0, 0, 0, 0, 30, []),
+                                TeamImage(Team.GREEN, "../images/Hedgehog.png")], 0, 0, 0, 0, 30, [], 45),
     ),
     TankData(
         TankBase("Stationary", [], 400, 0, 0, 0, False, False),
         TankTurret("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
-                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 30, 1, 90, 100, []),
+                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 30, 1, 90, 100, [], 200),
     ),
 ]
 
@@ -156,6 +160,22 @@ class Game:
         self.selected_tower = 0
         self.player_team = Team.GREEN
 
+        self.unlocked_bases: list[bool] = []
+        for base in tank_bases:
+            self.unlocked_bases.append(True if base.unlock_price == 0 else False)
+
+        self.unlocked_turrets: list[bool] = []
+        for turret in tank_turrets:
+            self.unlocked_turrets.append(True if turret.unlock_price == 0 else False)
+
+        self.unlocked_towers: list[bool] = []
+        for tower in towers:
+            self.unlocked_towers.append(True if tower.tank_turret.unlock_price == 0 else False)
+
+        self.menu_image = pygame.image.load("../images/Menu.png")
+        self.selection = pygame.image.load("../images/Selector.png")
+        self.cover = pygame.image.load("../images/Research_Cover.png")
+
         self.bases.append(
             Base(screen, pygame.image.load("../images/Base.png"),
                  pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(62), self.map.get_cell(123),
@@ -175,6 +195,7 @@ class Game:
     def update(self):
         if pygame.mouse.get_pressed()[0]:
             pos = pygame.mouse.get_pos()
+            print(pos)
             if self.map.pos_in_map(pos):
                 cell = self.map.get_cell(self.map.pos_to_index(pos))
                 if cell is not None:
@@ -198,66 +219,158 @@ class Game:
         for base in self.bases:
             base.flood_fill()
 
+    def buy_button(self, x, y, unlocked_list: list[bool], index: int,
+                   selected_index: int, cost: int, price: int, name: str):
+        button_container = pygame.Rect(x, y, 729 - 651, 133 - 82)
+
+        if not unlocked_list[index]:
+            price_text = small_font.render(f"{price}", True, (254, 254, 254))
+            self.screen.blit(price_text, (x + 54, y + 38.5))
+        else:
+            self.screen.blit(self.cover, (x + 4, y + 39))
+
+        if selected_index == index:
+            self.screen.blit(self.selection, (x - 8, y - 7))
+
+        name_text = medium_font.render(f"{name}", True, (200, 255, 220))
+        self.screen.blit(name_text, (button_container.centerx - name_text.get_width() / 2, button_container.centery - name_text.get_height() / 2 - 9))
+
+        cost_text = small_font.render(f"{cost}", True, (254, 254, 254))
+        self.screen.blit(cost_text, (x + 32.5, y + 27.5))
+
+        return click and button_container.collidepoint(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+
+
+
+
     def buy_menu(self):
-        width = self.screen.get_width() - self.size
-        pygame.draw.rect(self.screen, (20, 80, 20), (self.size, 0, width, self.size))
+        buy_container = (self.size, 0, self.screen.get_width() - self.size, self.size)
+        self.screen.blit(self.menu_image, buy_container)
 
-        offset = 10
-        green_info_container = pygame.Rect(self.size + offset, offset, width - offset * 2, offset * 10)
-        pygame.draw.rect(self.screen, (30, 90, 30), green_info_container)
+        player_base = list(filter(lambda base: base.team == self.player_team, self.bases))[0]
+        player_money = small_font.render(f"{player_base.money}", True, (252, 252, 252))
+        self.screen.blit(player_money, (695, 318.5 + player_money.get_height() // 2))
+        player_health = small_font.render(f"{player_base.health}", True, (252, 252, 252))
+        self.screen.blit(player_health, (695, 382.5 + player_health.get_height() // 2))
 
-        green_team = buy_font.render("Green Team", True, (2, 2, 2))
-        self.screen.blit(green_team, (green_info_container.centerx - green_team.get_width() // 2, offset * 3))
+        if self.buy_button(651, 82, self.unlocked_bases, 0, self.selected_base, tank_bases[0].cost, tank_bases[0].unlock_price, tank_bases[0].name):
+            if self.selected_base != 0 and self.unlocked_bases[0]:
+                self.selected_base = 0
+            elif not self.unlocked_bases[0]:
+                if player_base.money >= tank_bases[0].unlock_price:
+                    player_base.money -= tank_bases[0].unlock_price
+                    self.selected_base = 0
+                    self.unlocked_bases[0] = True
 
-        green_base = list(filter(lambda base: base.team == Team.GREEN, self.bases))[0]
-        green_health = font.render(f"Base HP: {green_base.health}", True, (2, 2, 2))
-        self.screen.blit(green_health, (
-        green_info_container.centerx - green_health.get_width() // 2, offset * 5 + green_health.get_height() // 2))
+        if self.buy_button(651, 146, self.unlocked_bases, 1, self.selected_base, tank_bases[1].cost, tank_bases[1].unlock_price, tank_bases[1].name):
+            if self.selected_base != 1 and self.unlocked_bases[1]:
+                self.selected_base = 1
+            elif not self.unlocked_bases[1]:
+                if player_base.money >= tank_bases[1].unlock_price:
+                    player_base.money -= tank_bases[1].unlock_price
+                    self.selected_base = 1
+                    self.unlocked_bases[1] = True
 
-        green_money = font.render(f"Cash: {green_base.money}", True, (2, 2, 2))
-        self.screen.blit(green_money, (
-        green_info_container.centerx - green_money.get_width() // 2, offset * 7 + green_money.get_height() // 2))
+        if self.buy_button(651, 210, self.unlocked_bases, 2, self.selected_base, tank_bases[2].cost, tank_bases[2].unlock_price, tank_bases[2].name):
+            if self.selected_base != 2 and self.unlocked_bases[2]:
+                self.selected_base = 2
+            elif not self.unlocked_bases[2]:
+                if player_base.money >= tank_bases[2].unlock_price:
+                    player_base.money -= tank_bases[2].unlock_price
+                    self.selected_base = 2
+                    self.unlocked_bases[2] = True
 
-        red_info_container = pygame.Rect(self.size + offset, self.size - offset * 11, width - offset * 2, offset * 10)
-        pygame.draw.rect(self.screen, (30, 90, 30), red_info_container)
+        if self.buy_button(743, 82, self.unlocked_turrets, 0, self.selected_turret, tank_turrets[0].cost, tank_turrets[0].unlock_price, tank_turrets[0].name):
+            if self.selected_turret != 0 and self.unlocked_turrets[0]:
+                self.selected_turret = 0
+            elif not self.unlocked_turrets[0]:
+                if player_base.money >= tank_turrets[0].unlock_price:
+                    player_base.money -= tank_turrets[0].unlock_price
+                    self.selected_turret = 0
+                    self.unlocked_turrets[0] = True
 
-        red_team = buy_font.render("Red Team", True, (2, 2, 2))
-        self.screen.blit(red_team, (red_info_container.centerx - red_team.get_width() // 2, offset * 3 + (self.size - offset * 11.5)))
+        if self.buy_button(743, 146, self.unlocked_turrets, 1, self.selected_turret, tank_turrets[1].cost, tank_turrets[1].unlock_price, tank_turrets[1].name):
+            if self.selected_turret != 1 and self.unlocked_turrets[1]:
+                self.selected_turret = 1
+            elif not self.unlocked_turrets[1]:
+                if player_base.money >= tank_turrets[1].unlock_price:
+                    player_base.money -= tank_turrets[1].unlock_price
+                    self.selected_turret = 1
+                    self.unlocked_turrets[1] = True
 
-        red_base = list(filter(lambda base: base.team == Team.RED, self.bases))[0]
-        red_health = font.render(f"Base HP: {red_base.health}", True, (2, 2, 2))
-        self.screen.blit(red_health, (
-            red_info_container.centerx - red_health.get_width() // 2, offset * 5 + red_health.get_height() // 2 + (self.size - offset * 11.5)))
+        if self.buy_button(743, 210, self.unlocked_turrets, 2, self.selected_turret, tank_turrets[2].cost, tank_turrets[2].unlock_price, tank_turrets[2].name):
+            if self.selected_turret != 2 and self.unlocked_turrets[2]:
+                self.selected_turret = 2
+            elif not self.unlocked_turrets[2]:
+                if player_base.money >= tank_turrets[2].unlock_price:
+                    player_base.money -= tank_turrets[2].unlock_price
+                    self.selected_turret = 2
+                    self.unlocked_turrets[2] = True
 
-        red_money = font.render(f"Cash: {red_base.money}", True, (2, 2, 2))
-        self.screen.blit(red_money, (
-            red_info_container.centerx - red_money.get_width() // 2, offset * 7 + red_money.get_height() // 2 + (self.size - offset * 11.5)))
+        # one_cover =
 
-        buy_tank_container = pygame.Rect(self.size + offset, offset * 12, width - offset * 2, offset * 20)
-        pygame.draw.rect(self.screen, (30, 90, 30), buy_tank_container)
-
-        base_text = buy_font.render("Tank Base", True, (2, 2, 2))
-        self.screen.blit(base_text, (buy_tank_container.centerx - base_text.get_width() / 2, offset * 14))
-
-        base_name = font.render(f"{tank_bases[self.selected_base].name}", True, (2, 2, 2))
-        self.screen.blit(base_name, (buy_tank_container.centerx - base_name.get_width() / 2, offset * 16))
-
-        base_image = pygame.image.load(list(filter(lambda tank_base : tank_base.team == self.player_team, tank_bases[self.selected_base].images))[0].url)
-        self.screen.blit(base_image, (buy_tank_container.centerx - base_image.get_width() / 2, offset * 17.5))
-
-        turret_text = buy_font.render("Tank Turret", True, (2, 2, 2))
-        self.screen.blit(turret_text, (buy_tank_container.centerx - turret_text.get_width() / 2, offset * 23))
-
-        turret_name = font.render(f"{tank_turrets[self.selected_turret].name}", True, (2, 2, 2))
-        self.screen.blit(turret_name, (buy_tank_container.centerx - turret_name.get_width() / 2, offset * 25))
-
-        turret_image = pygame.image.load(
-            list(filter(lambda tank_base: tank_base.team == self.player_team, tank_turrets[self.selected_turret].images))[
-                0].url)
-        self.screen.blit(turret_image, (buy_tank_container.centerx - turret_image.get_width() / 2, offset * 26.5))
-
-        buy_tower_container = pygame.Rect(self.size + offset, offset * 33, width - offset * 2, offset * 19)
-        pygame.draw.rect(self.screen, (30, 90, 30), buy_tower_container)
+        # offset = 10
+        # green_info_container = pygame.Rect(self.size + offset, offset, width - offset * 2, offset * 10)
+        # pygame.draw.rect(self.screen, (30, 90, 30), green_info_container)
+        #
+        # green_team = buy_font.render("Green Team", True, (2, 2, 2))
+        # self.screen.blit(green_team, (green_info_container.centerx - green_team.get_width() // 2, offset * 3))
+        #
+        # green_base = list(filter(lambda base: base.team == Team.GREEN, self.bases))[0]
+        # green_health = font.render(f"Base HP: {green_base.health}", True, (2, 2, 2))
+        # self.screen.blit(green_health, (
+        #     green_info_container.centerx - green_health.get_width() // 2, offset * 5 + green_health.get_height() // 2))
+        #
+        # green_money = font.render(f"Cash: {green_base.money}", True, (2, 2, 2))
+        # self.screen.blit(green_money, (
+        #     green_info_container.centerx - green_money.get_width() // 2, offset * 7 + green_money.get_height() // 2))
+        #
+        # red_info_container = pygame.Rect(self.size + offset, self.size - offset * 11, width - offset * 2, offset * 10)
+        # pygame.draw.rect(self.screen, (30, 90, 30), red_info_container)
+        #
+        # red_team = buy_font.render("Red Team", True, (2, 2, 2))
+        # self.screen.blit(red_team, (
+        #     red_info_container.centerx - red_team.get_width() // 2, offset * 3 + (self.size - offset * 11.5)))
+        #
+        # red_base = list(filter(lambda base: base.team == Team.RED, self.bases))[0]
+        # red_health = font.render(f"Base HP: {red_base.health}", True, (2, 2, 2))
+        # self.screen.blit(red_health, (
+        #     red_info_container.centerx - red_health.get_width() // 2,
+        #     offset * 5 + red_health.get_height() // 2 + (self.size - offset * 11.5)))
+        #
+        # red_money = font.render(f"Cash: {red_base.money}", True, (2, 2, 2))
+        # self.screen.blit(red_money, (
+        #     red_info_container.centerx - red_money.get_width() // 2,
+        #     offset * 7 + red_money.get_height() // 2 + (self.size - offset * 11.5)))
+        #
+        # buy_tank_container = pygame.Rect(self.size + offset, offset * 12, width - offset * 2, offset * 20)
+        # pygame.draw.rect(self.screen, (30, 90, 30), buy_tank_container)
+        #
+        # base_text = buy_font.render("Tank Base", True, (2, 2, 2))
+        # self.screen.blit(base_text, (buy_tank_container.centerx - base_text.get_width() / 2, offset * 14))
+        #
+        # base_name = font.render(f"{tank_bases[self.selected_base].name}", True, (2, 2, 2))
+        # self.screen.blit(base_name, (buy_tank_container.centerx - base_name.get_width() / 2, offset * 16))
+        #
+        # base_image = pygame.image.load(
+        #     list(filter(lambda tank_base: tank_base.team == self.player_team, tank_bases[self.selected_base].images))[
+        #         0].url)
+        # self.screen.blit(base_image, (buy_tank_container.centerx - base_image.get_width() / 2, offset * 17.5))
+        #
+        # turret_text = buy_font.render("Tank Turret", True, (2, 2, 2))
+        # self.screen.blit(turret_text, (buy_tank_container.centerx - turret_text.get_width() / 2, offset * 23))
+        #
+        # turret_name = font.render(f"{tank_turrets[self.selected_turret].name}", True, (2, 2, 2))
+        # self.screen.blit(turret_name, (buy_tank_container.centerx - turret_name.get_width() / 2, offset * 25))
+        #
+        # turret_image = pygame.image.load(
+        #     list(filter(lambda tank_base: tank_base.team == self.player_team,
+        #                 tank_turrets[self.selected_turret].images))[
+        #         0].url)
+        # self.screen.blit(turret_image, (buy_tank_container.centerx - turret_image.get_width() / 2, offset * 26.5))
+        #
+        # buy_tower_container = pygame.Rect(self.size + offset, offset * 33, width - offset * 2, offset * 19)
+        # pygame.draw.rect(self.screen, (30, 90, 30), buy_tower_container)
 
 
 class Base:
@@ -273,7 +386,7 @@ class Base:
         self.team = team
         self.water_team = water_team
         self.tanks: list[Tank] = []
-        self.money = 250
+        self.money = 5000
 
         for cell in self.base_cells():
             cell.state = State.BLOCKED
@@ -408,7 +521,7 @@ class Tank:
     def shoot(self):
         if self.fire_timer <= 0:
             self.projectiles.append(Projectile(self.screen, self, 10, 2))
-            self.fire_timer = self.turret.data.fire_cooldown
+            self.fire_timer = self.turret.data.fire_cooldown / 2
 
     def get_closest_cell(self) -> Cell:
         cell = self.base.game.map.get_cell(self.base.game.map.pos_to_index(self.get_center()))
@@ -605,7 +718,7 @@ class Turret:
     def aim_at(self, target_pos: tuple[int, int]):
         center = self.get_center()
         self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0])) + (
-                    random.randint(-100, 100) / 1000)
+                random.randint(-100, 100) / 1000)
 
 
 class Fire:
@@ -802,9 +915,7 @@ class Map:
 
     def flood_fill(self, start: int, end: int, team: Team):
         water = team == Team.RED_WATER or team == Team.GREEN_WATER
-
         team = team.value
-
         ending_cell = self.get_cell(end)
         end_cell_blocked = ending_cell.state != State.OPEN
         if not end_cell_blocked:
@@ -818,8 +929,8 @@ class Map:
                     if neighbor_index is None:
                         continue
                     neighbor = self.get_cell(neighbor_index)
-                    if (neighbor.state == State.OPEN or (water and neighbor.state != State.BLOCKED)) and neighbor.value[
-                        team] == -1:
+                    if (neighbor.state == State.OPEN or
+                        (water and neighbor.state != State.BLOCKED)) and neighbor.value[team] == -1:
                         neighbor.value[team] = cell.value[team] + 1
                         next_cells.append(neighbor)
                         end_cell_blocked = False
@@ -847,8 +958,7 @@ class Map:
                 if neighbor_index is None:
                     continue
                 neighbor = self.get_cell(neighbor_index)
-                if (neighbor.state == State.OPEN or (water and neighbor.state != State.BLOCKED)) and neighbor.value[
-                    team] < cell.value[team]:
+                if (neighbor.state == State.OPEN or (water and neighbor.state != State.BLOCKED)) and neighbor.value[team] < cell.value[team]:
                     valid.append(neighbor)
 
             if len(valid) == 0:
