@@ -6,7 +6,9 @@ import math
 
 # Global variables
 pygame.font.init()
-font = pygame.font.SysFont("avenir", 48)
+menu_font = pygame.font.SysFont("avenir", 48)
+buy_font = pygame.font.SysFont("avenir", 24)
+font = pygame.font.SysFont("avenir", 16)
 click = False
 keys = []
 
@@ -151,6 +153,10 @@ class Game:
         self.game_active = True
         self.bases: list[Base] = []
         self.map = Map(screen, self)
+        self.selected_base = 0
+        self.selected_turret = 0
+        self.selected_tower = 0
+        self.player_team = Team.GREEN
 
         self.bases.append(
             Base(screen, pygame.image.load("../images/Base.png"),
@@ -170,11 +176,13 @@ class Game:
 
     def update(self):
         if pygame.mouse.get_pressed()[0]:
-            cell = self.map.get_cell(self.map.pos_to_index(pygame.mouse.get_pos()))
-            if cell is not None:
-                self.bases[0].add_tower(2, cell.index)
+            pos = pygame.mouse.get_pos()
+            if self.map.pos_in_map(pos):
+                cell = self.map.get_cell(self.map.pos_to_index(pos))
+                if cell is not None:
+                    self.bases[0].add_tower(2, cell.index)
 
-                self.flood_fill()
+                    self.flood_fill()
 
         for base in self.bases:
             base.update()
@@ -193,7 +201,65 @@ class Game:
             base.flood_fill()
 
     def buy_menu(self):
-        pass
+        width = self.screen.get_width() - self.size
+        pygame.draw.rect(self.screen, (20, 80, 20), (self.size, 0, width, self.size))
+
+        offset = 10
+        green_info_container = pygame.Rect(self.size + offset, offset, width - offset * 2, offset * 10)
+        pygame.draw.rect(self.screen, (30, 90, 30), green_info_container)
+
+        green_team = buy_font.render("Green Team", True, (2, 2, 2))
+        self.screen.blit(green_team, (green_info_container.centerx - green_team.get_width() // 2, offset * 3))
+
+        green_base = list(filter(lambda base: base.team == Team.GREEN, self.bases))[0]
+        green_health = font.render(f"Base HP: {green_base.health}", True, (2, 2, 2))
+        self.screen.blit(green_health, (
+        green_info_container.centerx - green_health.get_width() // 2, offset * 5 + green_health.get_height() // 2))
+
+        green_money = font.render(f"Cash: {green_base.money}", True, (2, 2, 2))
+        self.screen.blit(green_money, (
+        green_info_container.centerx - green_money.get_width() // 2, offset * 7 + green_money.get_height() // 2))
+
+        red_info_container = pygame.Rect(self.size + offset, self.size - offset * 11, width - offset * 2, offset * 10)
+        pygame.draw.rect(self.screen, (30, 90, 30), red_info_container)
+
+        red_team = buy_font.render("Red Team", True, (2, 2, 2))
+        self.screen.blit(red_team, (red_info_container.centerx - red_team.get_width() // 2, offset * 3 + (self.size - offset * 11.5)))
+
+        red_base = list(filter(lambda base: base.team == Team.RED, self.bases))[0]
+        red_health = font.render(f"Base HP: {red_base.health}", True, (2, 2, 2))
+        self.screen.blit(red_health, (
+            red_info_container.centerx - red_health.get_width() // 2, offset * 5 + red_health.get_height() // 2 + (self.size - offset * 11.5)))
+
+        red_money = font.render(f"Cash: {red_base.money}", True, (2, 2, 2))
+        self.screen.blit(red_money, (
+            red_info_container.centerx - red_money.get_width() // 2, offset * 7 + red_money.get_height() // 2 + (self.size - offset * 11.5)))
+
+        buy_tank_container = pygame.Rect(self.size + offset, offset * 12, width - offset * 2, offset * 20)
+        pygame.draw.rect(self.screen, (30, 90, 30), buy_tank_container)
+
+        base_text = buy_font.render("Tank Base", True, (2, 2, 2))
+        self.screen.blit(base_text, (buy_tank_container.centerx - base_text.get_width() / 2, offset * 14))
+
+        base_name = font.render(f"{tank_bases[self.selected_base].name}", True, (2, 2, 2))
+        self.screen.blit(base_name, (buy_tank_container.centerx - base_name.get_width() / 2, offset * 16))
+
+        base_image = pygame.image.load(list(filter(lambda tank_base : tank_base.team == self.player_team, tank_bases[self.selected_base].images))[0].url)
+        self.screen.blit(base_image, (buy_tank_container.centerx - base_image.get_width() / 2, offset * 17.5))
+
+        turret_text = buy_font.render("Tank Turret", True, (2, 2, 2))
+        self.screen.blit(turret_text, (buy_tank_container.centerx - turret_text.get_width() / 2, offset * 23))
+
+        turret_name = font.render(f"{tank_turrets[self.selected_turret].name}", True, (2, 2, 2))
+        self.screen.blit(turret_name, (buy_tank_container.centerx - turret_name.get_width() / 2, offset * 25))
+
+        turret_image = pygame.image.load(
+            list(filter(lambda tank_base: tank_base.team == self.player_team, tank_turrets[self.selected_turret].images))[
+                0].url)
+        self.screen.blit(turret_image, (buy_tank_container.centerx - turret_image.get_width() / 2, offset * 26.5))
+
+        buy_tower_container = pygame.Rect(self.size + offset, offset * 33, width - offset * 2, offset * 19)
+        pygame.draw.rect(self.screen, (30, 90, 30), buy_tower_container)
 
 
 class Base:
@@ -209,6 +275,7 @@ class Base:
         self.team = team
         self.water_team = water_team
         self.tanks: list[Tank] = []
+        self.money = 250
 
         for cell in self.base_cells():
             cell.state = State.BLOCKED
@@ -274,7 +341,7 @@ class Base:
     def update(self):
         if self.spawn_timer <= 0:
             self.spawn_timer = self.spawn_delay
-            self.spawn((0, 2))
+            self.spawn((self.game.selected_base, self.game.selected_turret))
         else:
             self.spawn_timer -= 1
 
@@ -522,7 +589,7 @@ class Turret:
             self.target_angle = 90 - self.tank.get_angle()
 
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
-        targeted = round(sin * 20) / 20 == 0
+        targeted = round(sin * 10) / 10 == 0
         if not targeted:
             amount = abs(sin) / sin * self.data.rotation_speed
             self.rotate_by(amount)
@@ -539,7 +606,8 @@ class Turret:
 
     def aim_at(self, target_pos: tuple[int, int]):
         center = self.get_center()
-        self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0]))
+        self.target_angle = math.degrees(math.atan2(target_pos[1] - center[1], target_pos[0] - center[0])) + (
+                    random.randint(-100, 100) / 1000)
 
 
 class Fire:
@@ -836,17 +904,18 @@ class StateManager:
             self.game.draw()
 
     def title_screen(self):
-        title = font.render("Tank Tower Defense", True, (2, 2, 2))
+        title = menu_font.render("Tank Tower Defense", True, (2, 2, 2))
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        button_text = font.render("Press 'SPACE' To Start", True, (2, 2, 2))
+        button_text = menu_font.render("Press 'SPACE' To Start", True, (2, 2, 2))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def end_screen(self):
-        title = font.render("Game Over", True, (2, 2, 2))
-        win_text = font.render(f"{self.winner} team won!", True, (2, 2, 2))
+        title = menu_font.render("Game Over", True, (2, 2, 2))
+        win_text = menu_font.render(f"{self.winner} team won!", True, (2, 2, 2))
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
-        button_text = font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
+        self.screen.blit(win_text,
+                         (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = menu_font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def game_over(self, winner: Team):
