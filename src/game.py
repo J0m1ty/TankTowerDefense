@@ -6,9 +6,7 @@ import math
 
 # Global variables
 pygame.font.init()
-menu_font = pygame.font.SysFont("avenir", 48)
-buy_font = pygame.font.SysFont("avenir", 24)
-font = pygame.font.SysFont("avenir", 16)
+font = pygame.font.SysFont("avenir", 48)
 click = False
 keys = []
 
@@ -904,18 +902,24 @@ class StateManager:
             self.game.draw()
 
     def title_screen(self):
-        title = menu_font.render("Tank Tower Defense", True, (2, 2, 2))
+        self.screen.fill((59, 76, 99))
+        title = font.render("Tank Tower Defense", True, (255, 201, 14))
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        button_text = menu_font.render("Press 'SPACE' To Start", True, (2, 2, 2))
+        button_text = font.render("Press 'SPACE' to Start", True, (255, 201, 14))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def end_screen(self):
-        title = menu_font.render("Game Over", True, (2, 2, 2))
-        win_text = menu_font.render(f"{self.winner} team won!", True, (2, 2, 2))
+        if self.winner == "RED":
+            color = (237, 28, 36)
+        else:
+            color = (28, 237, 36)
+
+        self.screen.fill((59, 76, 99))
+        title = font.render("Game Over", True, (255, 201, 14))
+        win_text = font.render(f"{self.winner} Team Won!", True, color)
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        self.screen.blit(win_text,
-                         (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
-        button_text = menu_font.render("Press 'SPACE' To Return to Menu", True, (2, 2, 2))
+        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = font.render("Press 'SPACE' to Return to Title Screen", True, (255, 201, 14))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def game_over(self, winner: Team):
