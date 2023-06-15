@@ -819,6 +819,11 @@ class StateManager:
             if keys[pygame.K_SPACE]:
                 self.scene = "game"
                 self.game = Game(self.screen)
+            if keys[pygame.K_h]:
+                self.scene = "help"
+        elif self.scene == "help":
+            if keys[pygame.K_b]:
+                self.scene = "title"
         elif self.scene == "end":
             if keys[pygame.K_SPACE]:
                 self.scene = "title"
@@ -829,6 +834,8 @@ class StateManager:
         self.screen.fill((255, 255, 255))
         if self.scene == "title":
             self.title_screen()
+        elif self.scene == "help":
+            self.help_screen()
         elif self.scene == "end":
             self.end_screen()
         elif self.scene == "game":
@@ -841,6 +848,17 @@ class StateManager:
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
         button_text = font.render("Press 'SPACE' to Start", True, (255, 201, 14))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
+        get_help = font.render("Press 'H' for Help", True, (255, 201, 14))
+        self.screen.blit(get_help, (self.screen.get_width() // 2 - get_help.get_width() // 2, 500))
+
+    def help_screen(self):
+        self.screen.fill((59, 76, 99))
+        title = font.render("Help", True, (255, 201, 14))
+        self.screen.blit(title, (575, 50))
+        description = pygame.image.load("../images/2023-06-15 (1).png")
+        self.screen.blit(description, (20, 5))
+        back = font.render("Press 'B' to Go Back", True, (255, 201, 14))
+        self.screen.blit(back, (475, 575))
 
     def end_screen(self):
         if self.winner == "RED":
