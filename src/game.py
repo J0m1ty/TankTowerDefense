@@ -518,6 +518,7 @@ class Base:
 
         if not success:
             cell.state = State.OPEN
+            self.game.flood_fill()
             return False
 
         tank_data = towers[tower]
