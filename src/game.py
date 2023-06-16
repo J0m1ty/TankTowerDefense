@@ -582,7 +582,7 @@ class Base:
         if self.passive_income_timer > 0:
             self.passive_income_timer -= 1 / clock.get_fps()
         else:
-            self.money += 50
+            self.money += 100
             self.passive_income_timer = 5
 
         for tank in self.tanks:
