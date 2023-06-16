@@ -6,7 +6,7 @@ import math
 
 # Global variables
 pygame.font.init()
-font = pygame.font.SysFont("avenir", 36)
+font = pygame.font.SysFont("avenir", 48)
 small_font = pygame.font.SysFont("avenir", 16)
 medium_font = pygame.font.SysFont("avenir", 26)
 click = False
@@ -1020,11 +1020,11 @@ class StateManager:
 
     def title_screen(self):
         self.screen.fill((59, 76, 99))
-        title = pygame.image.load("../images/Title.png")
-        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 100))
-        button_text = font.render("Press 'SPACE' to Start", True, (255, 255, 255))
+        title = font.render("Tank Tower Defense", True, (255, 201, 14))
+        self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
+        button_text = font.render("Press 'SPACE' to Start", True, (255, 201, 14))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
-        get_help = font.render("Press 'H' for Help", True, (255, 255, 255))
+        get_help = font.render("Press 'H' for Help", True, (255, 201, 14))
         self.screen.blit(get_help, (self.screen.get_width() // 2 - get_help.get_width() // 2, 500))
 
     def help_screen(self):
@@ -1033,21 +1033,21 @@ class StateManager:
         self.screen.blit(title, (575, 50))
         description = pygame.image.load("../images/2023-06-15 (1).png")
         self.screen.blit(description, (20, 5))
-        back = font.render("Press 'B' to Go Back", True, (255, 255, 255))
-        self.screen.blit(back, (525, 575))
+        back = font.render("Press 'B' to Go Back", True, (255, 201, 14))
+        self.screen.blit(back, (475, 575))
 
     def end_screen(self):
         if self.winner == "RED":
             color = (237, 28, 36)
         else:
             color = (28, 237, 36)
+
         self.screen.fill((59, 76, 99))
-        title = pygame.image.load("../images/Game_Over.png")
+        title = font.render("Game Over", True, (255, 201, 14))
         win_text = font.render(f"{self.winner} Team Won!", True, color)
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 +
-                                    title.get_height() * 1.5))
-        button_text = font.render("Press 'SPACE' to Return to Title Screen", True, (255, 255, 255))
+        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = font.render("Press 'SPACE' to Return to Title Screen", True, (255, 201, 14))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def game_over(self, winner: Team):

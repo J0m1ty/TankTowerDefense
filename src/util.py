@@ -18,6 +18,7 @@ class State(Enum):
     OPEN = 0
     WATER = 1
     BLOCKED = 2
+    DESTRUCTIBLE = 3
 
 class Team(Enum):
     NEUTRAL = 0
