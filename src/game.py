@@ -6,9 +6,9 @@ import math
 
 # Global variables
 pygame.font.init()
-font = pygame.font.SysFont("avenir", 48)
+font = pygame.font.SysFont("avenir", 38)
 small_font = pygame.font.SysFont("avenir", 16)
-medium_font = pygame.font.SysFont("avenir", 22)
+medium_font = pygame.font.SysFont("avenir", 26)
 click = False
 keys = []
 clock = pygame.time.Clock()
@@ -140,9 +140,9 @@ class Cell:
     def draw(self, rect: tuple[int, int, int, int], s: pygame.Surface):
         color = (20, 20, 20)
         if self.highlighted:
-            color = (0, 255, 0)
-            if self.state == State.BLOCKED:
-                color = (255, 0, 0)
+            color = (255, 0, 0)
+            if self.state == State.WATER:
+                color = (0, 0, 255)
         pygame.draw.rect(s, color, rect, 1)
 
     def __str__(self):
@@ -316,13 +316,15 @@ class Game:
             self.screen.blit(self.selection, (x - 8, y - 7))
 
         name_text = medium_font.render(f"{name}", True, (200, 255, 220))
-        self.screen.blit(name_text, (button_container.centerx - name_text.get_width() / 2,
-                                     button_container.centery - name_text.get_height() / 2 - 9))
+        self.screen.blit(name_text, (button_container.centerx - name_text.get_width() / 2, button_container.centery - name_text.get_height() / 2 - 9))
 
         cost_text = small_font.render(f"{cost}", True, (254, 254, 254))
         self.screen.blit(cost_text, (x + 32.5, y + 27.5))
 
         return click and button_container.collidepoint(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1])
+
+
+
 
     def buy_menu(self):
         buy_container = pygame.Rect(self.size, 0, self.screen.get_width() - self.size, self.size)
@@ -334,8 +336,7 @@ class Game:
         player_health = small_font.render(f"{player_base.health}", True, (252, 252, 252))
         self.screen.blit(player_health, (695, 382.5 + player_health.get_height() // 2))
 
-        if self.buy_button(651, 82, self.unlocked_bases, 0, self.selected_base, tank_bases[0].cost,
-                           tank_bases[0].unlock_price, tank_bases[0].name):
+        if self.buy_button(651, 82, self.unlocked_bases, 0, self.selected_base, tank_bases[0].cost, tank_bases[0].unlock_price, tank_bases[0].name):
             if self.selected_base != 0 and self.unlocked_bases[0]:
                 self.selected_base = 0
             elif not self.unlocked_bases[0]:
@@ -1162,21 +1163,21 @@ class StateManager:
 
     def title_screen(self):
         self.screen.fill((59, 76, 99))
-        title = font.render("Tank Tower Defense", True, (255, 201, 14))
+        title = pygame.image.load("../images/Title.png")
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        button_text = font.render("Press 'SPACE' to Start", True, (255, 201, 14))
+        button_text = font.render("Press 'SPACE' to Start", True, (255, 255, 255))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
-        get_help = font.render("Press 'H' for Help", True, (255, 201, 14))
+        get_help = font.render("Press 'H' for Help", True, (255, 255, 255))
         self.screen.blit(get_help, (self.screen.get_width() // 2 - get_help.get_width() // 2, 500))
 
     def help_screen(self):
         self.screen.fill((59, 76, 99))
         title = font.render("Help", True, (255, 201, 14))
-        self.screen.blit(title, (575, 50))
+        self.screen.blit(title, (575, 25))
         description = pygame.image.load("../images/2023-06-15 (1).png")
         self.screen.blit(description, (20, 5))
-        back = font.render("Press 'B' to Go Back", True, (255, 201, 14))
-        self.screen.blit(back, (475, 575))
+        back = font.render("Press 'B' to Go Back", True, (255, 255, 255))
+        self.screen.blit(back, (525, 575))
 
     def end_screen(self):
         if self.winner == "RED":
@@ -1185,12 +1186,11 @@ class StateManager:
             color = (28, 237, 36)
 
         self.screen.fill((59, 76, 99))
-        title = font.render("Game Over", True, (255, 201, 14))
-        win_text = font.render(f"{self.winner[:1].upper()}{self.winner[1:].lower()} Team Won!", True, color)
+        title = pygame.image.load("../images/Game_Over.png")
+        win_text = font.render(f"{self.winner} Team Won!", True, color)
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
-        self.screen.blit(win_text,
-                         (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
-        button_text = font.render("Press 'SPACE' to Return to Title Screen", True, (255, 201, 14))
+        self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
+        button_text = font.render("Press 'SPACE' to Return to Title Screen", True, (255, 255, 255))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
 
     def game_over(self, winner: Team):
