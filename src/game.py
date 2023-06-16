@@ -81,11 +81,11 @@ class TankData:
 
 tank_bases = [
     TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
-                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 60, 3, 100, False, 0),
+                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 80, 3, 100, False, 0),
     TankBase("Tracks", [TeamImage(Team.RED, "../images/Red_Tank_Base.PNG"),
-                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 60, 1, 200, False, 300),
+                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 70, 1, 200, False, 300),
     TankBase("Hover", [TeamImage(Team.RED, "../images/Red_Hover_Base.PNG"),
-                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 60, 2, 400, True, 600),
+                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 80, 2, 400, True, 600),
 ]
 
 tank_turrets = [
@@ -114,7 +114,7 @@ towers = [
     TankData(
         TankBase("Stationary", [], 400, 0, 0, 0, False, False),
         TankTurret("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
-                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 30, 1, 90, 100, [], 200),
+                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 60, 1, 90, 100, [], 200),
     ),
 ]
 
@@ -251,10 +251,10 @@ class Game:
             while tries > 0:
                 tvt = random.randint(0,100)
                 if tvt > 50:
-                    tank_base = random.randint(0, 1)
-                    tank_top = random.randint(0, 1)
+                    tank_base = random.randint(0, 2)
+                    tank_top = random.randint(0, 2)
                     cost = tank_bases[tank_base].cost + tank_turrets[tank_top].cost
-                    if enemy_base.money >= cost:
+                    if enemy_base.money >= cost and (self.unlocked_bases[tank_base] and self.unlocked_turrets[tank_top]):
                         enemy_base.money -= cost
                         enemy_base.spawn((tank_base, tank_top))
                         if enemy_base.money < 500:
@@ -263,18 +263,35 @@ class Game:
                             self.buy_timer = random.randint(2, 4)
                         tries = 0
                 else:
-                    tower = random.randint(0, 1)
+                    tower = random.randint(0, 2)
                     cost = towers[tower].tank_turret.cost
-                    if enemy_base.money >= cost:
+                    if enemy_base.money >= cost and self.unlocked_towers[tower]:
                         placing = 100
                         while placing > 0:
-                            success = enemy_base.add_tower(tower, self.map.get_rows() * self.map.get_rows() - 1)
-                            if success:
-                                enemy_base.money -= cost
-                                self.flood_fill()
-                                self.buy_timer = random.randint(5, 9)
-                                tries = 0
-                                break
+                            try_cell_index = random.randint(0, self.map.get_rows() * self.map.get_rows() - 1)
+                            try_cell_pos = self.map.rect_to_pos(self.map.index_to_rect(try_cell_index))
+                            try_cell_pos_center = (try_cell_pos[0] + self.map.size / 2, try_cell_pos[1] + self.map.size / 2)
+
+                            enemy_base = list(filter(lambda base: base.team != self.player_team, self.bases))[0]
+
+                            closest_dist = math.inf
+                            base_cells = enemy_base.base_cells()
+                            for cell in base_cells:
+                                cell_pos = self.map.rect_to_pos(self.map.index_to_rect(cell.index))
+                                cell_center = (cell_pos[0] + self.map.size / 2, cell_pos[1] + self.map.size / 2)
+                                dist = 0.66 * math.pow(cell_center[0] - try_cell_pos_center[0], 2) + math.pow(cell_center[1] - try_cell_pos_center[1],
+                                                                                              2) * 1.5
+                                if closest_dist > math.pow(dist, 2):
+                                    closest_dist = dist
+
+                            if closest_dist < math.pow(self.size / 1.4142, 2):
+                                success = enemy_base.add_tower(tower, try_cell_index)
+                                if success:
+                                    enemy_base.money -= cost
+                                    self.flood_fill()
+                                    self.buy_timer = random.randint(5, 9)
+                                    tries = 0
+                                    break
                             placing -= 1
                 tries -= 1
                 self.buy_timer = random.randint(2, 8)
@@ -723,7 +740,7 @@ class Tank:
     def draw(self):
         if self.data.display and self.image is not None:
             center = self.get_center()
-            rotated = pygame.transform.rotate(self.image, self.get_angle())
+            rotated = pygame.transform.rotate(self.image, self.get_angle() + (180 if self.data.name == "Hover" else 0))
             centered_rect = rotated.get_rect(center=(center[0], center[1]))
             self.screen.blit(rotated, centered_rect)
 
@@ -834,8 +851,8 @@ class Turret:
                 self.tank.size / 2) * math.sin(math.radians(-90 - self.get_angle()))
 
     def update(self):
-        if self.idle and self.data.name != "Howitzer":
-            self.target_angle = 90 - self.tank.get_angle()
+        if self.idle:
+            self.aim_at(self.tank.base.game.map.rect_to_pos(self.tank.base.game.map.index_to_rect(self.tank.base.other_base().base_cell.index)))
 
         sin = math.sin(math.radians(self.target_angle - (self.angle_offset - self.tank.get_angle())))
         targeted = round(sin * 10) / 10 == 0
@@ -1213,7 +1230,7 @@ def main():
 
     # Setup window, screen
     pygame.display.set_caption("Tank Tower Defense")
-    screen = pygame.display.set_mode((640 + 200, 640))
+    screen = pygame.display.set_mode((640 + 190, 640))
 
     # Set up our game
     state_manager = StateManager(screen)
