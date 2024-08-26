@@ -249,7 +249,7 @@ class Game:
             enemy_base = list(filter(lambda base: base.team != self.player_team, self.bases))[0]
             tries = 20
             while tries > 0:
-                tvt = random.randint(0,100)
+                tvt = random.randint(0,300)
                 if tvt > 50:
                     tank_base = random.randint(0, 2)
                     tank_top = random.randint(0, 2)
@@ -448,8 +448,8 @@ class Game:
             if self.selected_tower != 1 and self.unlocked_towers[1]:
                 self.selected_tower = 1
             elif not self.unlocked_towers[1]:
-                if player_base.money >= towers[0].tank_turret.unlock_price:
-                    player_base.money -= towers[0].tank_turret.unlock_price
+                if player_base.money >= towers[1].tank_turret.unlock_price:
+                    player_base.money -= towers[1].tank_turret.unlock_price
                     self.selected_tower = 1
                     self.unlocked_towers[1] = True
                 else:
@@ -461,8 +461,8 @@ class Game:
             if self.selected_tower != 2 and self.unlocked_towers[2]:
                 self.selected_tower = 2
             elif not self.unlocked_towers[2]:
-                if player_base.money >= towers[0].tank_turret.unlock_price:
-                    player_base.money -= towers[0].tank_turret.unlock_price
+                if player_base.money >= towers[2].tank_turret.unlock_price:
+                    player_base.money -= towers[2].tank_turret.unlock_price
                     self.selected_tower = 2
                     self.unlocked_towers[2] = True
                 else:
@@ -531,7 +531,6 @@ class Base:
         cell.state = State.DESTRUCTIBLE
 
         success = self.game.flood_fill()
-        print(success)
 
         if not success:
             cell.state = State.OPEN
