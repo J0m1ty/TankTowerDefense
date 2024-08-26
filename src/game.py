@@ -3,15 +3,26 @@ import pygame
 import random
 import sys
 import math
+import os
+
+pygame.font.init()
 
 # Global variables
-pygame.font.init()
+try:
+    base_path = sys._MEIPASS
+except AttributeError:
+    base_path = os.path.dirname(__file__)
+
+images = os.path.join(base_path, 'images')
 font = pygame.font.SysFont("avenir", 38)
 small_font = pygame.font.SysFont("avenir", 16)
 medium_font = pygame.font.SysFont("avenir", 26)
 click = False
 keys = []
 clock = pygame.time.Clock()
+
+def load(image: str):
+    return pygame.image.load(os.path.join(images, image))
 
 cell_states = [[2, 2, 2, 2, 2, 2, 0, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2],
                [2, 2, 2, 2, 0, 0, 0, 2, 2, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2],
@@ -80,41 +91,41 @@ class TankData:
 
 
 tank_bases = [
-    TankBase("Car", [TeamImage(Team.RED, "../images/Red_Car_Base.PNG"),
-                     TeamImage(Team.GREEN, "../images/Car_Base.PNG")], 100, 100 // 80, 3, 100, False, 0),
-    TankBase("Tracks", [TeamImage(Team.RED, "../images/Red_Tank_Base.PNG"),
-                        TeamImage(Team.GREEN, "../images/Tank_Base.PNG")], 200, 70 // 70, 1, 200, False, 300),
-    TankBase("Hover", [TeamImage(Team.RED, "../images/Red_Hover_Base.PNG"),
-                       TeamImage(Team.GREEN, "../images/Hover_Base.PNG")], 150, 85 // 80, 2, 400, True, 600),
+    TankBase("Car", [TeamImage(Team.RED, "Red_Car_Base.PNG"),
+                     TeamImage(Team.GREEN, "Car_Base.PNG")], 100, 100 // 80, 3, 100, False, 0),
+    TankBase("Tracks", [TeamImage(Team.RED, "Red_Tank_Base.PNG"),
+                        TeamImage(Team.GREEN, "Tank_Base.PNG")], 200, 70 // 70, 1, 200, False, 300),
+    TankBase("Hover", [TeamImage(Team.RED, "Red_Hover_Base.PNG"),
+                       TeamImage(Team.GREEN, "Hover_Base.PNG")], 150, 85 // 80, 2, 400, True, 600),
 ]
 
 tank_turrets = [
-    TankTurret("Single", [TeamImage(Team.RED, "../images/Red_Tank_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Turret.PNG")], 15, 60, 2, 200, 100, [(0, 0)], 0),
-    TankTurret("Double", [TeamImage(Team.RED, "../images/Red_Tank_Double_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Double_Turret.PNG")], 15, 30, 3, 150, 200,
+    TankTurret("Single", [TeamImage(Team.RED, "Red_Tank_Turret.PNG"),
+                          TeamImage(Team.GREEN, "Tank_Turret.PNG")], 15, 60, 2, 200, 100, [(0, 0)], 0),
+    TankTurret("Double", [TeamImage(Team.RED, "Red_Tank_Double_Turret.PNG"),
+                          TeamImage(Team.GREEN, "Tank_Double_Turret.PNG")], 15, 30, 3, 150, 200,
                [(-3, 0), (3, 0)], 300),
-    TankTurret("Rocket", [TeamImage(Team.RED, "../images/Red_Tank_Rocket_Turret.PNG"),
-                          TeamImage(Team.GREEN, "../images/Tank_Rocket_Turret.PNG")], 100, 180, 3, 200, 400, [], 600,
+    TankTurret("Rocket", [TeamImage(Team.RED, "Red_Tank_Rocket_Turret.PNG"),
+                          TeamImage(Team.GREEN, "Tank_Rocket_Turret.PNG")], 100, 180, 3, 200, 400, [], 600,
                True,
-               "../images/Rocket.png")
+               "Rocket.png")
 ]
 
 towers = [
     TankData(
         TankBase("Stationary", [], 50, 0, 0, 0, False, False),
-        TankTurret("Sandbags", [TeamImage(Team.RED, "../images/Red_Sandbag.png"),
-                                TeamImage(Team.GREEN, "../images/Sandbag.png")], 0, 0, 0, 0, 15, [], 0),
+        TankTurret("Sandbags", [TeamImage(Team.RED, "Red_Sandbag.png"),
+                                TeamImage(Team.GREEN, "Sandbag.png")], 0, 0, 0, 0, 15, [], 0),
     ),
     TankData(
         TankBase("Stationary", [], 100, 0, 0, 0, False, False),
-        TankTurret("Hedgehog", [TeamImage(Team.RED, "../images/Red_Hedgehog.png"),
-                                TeamImage(Team.GREEN, "../images/Hedgehog.png")], 0, 0, 0, 0, 30, [], 45),
+        TankTurret("Hedgehog", [TeamImage(Team.RED, "Red_Hedgehog.png"),
+                                TeamImage(Team.GREEN, "Hedgehog.png")], 0, 0, 0, 0, 30, [], 45),
     ),
     TankData(
         TankBase("Stationary", [], 400, 0, 0, 0, False, False),
-        TankTurret("Howitzer", [TeamImage(Team.RED, "../images/Red_Howitzer.png"),
-                                TeamImage(Team.GREEN, "../images/Howitzer.png")], 75, 60, 1, 90, 100, [], 200),
+        TankTurret("Howitzer", [TeamImage(Team.RED, "Red_Howitzer.png"),
+                                TeamImage(Team.GREEN, "Howitzer.png")], 75, 60, 1, 90, 100, [], 200),
     ),
 ]
 
@@ -175,9 +186,9 @@ class Game:
         for tower in towers:
             self.unlocked_towers.append(True if tower.tank_turret.unlock_price == 0 else False)
 
-        self.menu_image = pygame.image.load("../images/Menu.png")
-        self.selection = pygame.image.load("../images/Selector.png")
-        self.cover = pygame.image.load("../images/Research_Cover.png")
+        self.menu_image = load("Menu.png")
+        self.selection = load("Selector.png")
+        self.cover = load("Research_Cover.png")
 
         self.placing_tower = False
         self.immune = False
@@ -188,13 +199,13 @@ class Game:
         self.buy_timer = 3
 
         self.bases.append(
-            Base(screen, pygame.image.load("../images/Base.png"),
-                 pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(62), self.map.get_cell(123),
+            Base(screen, load("Base.png"),
+                 load("Base_Shadow.png"), self, self.map.get_cell(62), self.map.get_cell(123),
                  Team.GREEN, Team.GREEN_WATER))
 
         self.bases.append(
-            Base(screen, pygame.image.load("../images/Red_Base.png"),
-                 pygame.image.load("../images/Base_Shadow.png"), self, self.map.get_cell(316),
+            Base(screen, load("Red_Base.png"),
+                 load("Base_Shadow.png"), self, self.map.get_cell(316),
                  self.map.get_cell(255),
                  Team.RED, Team.RED_WATER))
 
@@ -306,7 +317,7 @@ class Game:
         self.buy_menu()
 
         if self.placing_tower:
-            image = pygame.image.load(list(filter(lambda tower : tower.team == self.player_team, towers[self.selected_tower].tank_turret.images))[0].url)
+            image = load(list(filter(lambda tower : tower.team == self.player_team, towers[self.selected_tower].tank_turret.images))[0].url)
             centered_rect = image.get_rect(center=(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1]))
             self.screen.blit(image, centered_rect)
 
@@ -634,7 +645,7 @@ class Tank:
 
         self.screen = screen
         self.base = base
-        self.image = None if (not data.tank_base.display) or len(data.tank_base.images) == 0 else pygame.image.load(
+        self.image = None if (not data.tank_base.display) or len(data.tank_base.images) == 0 else load(
             list(filter(lambda image: image.team == base.team, data.tank_base.images))[0].url)
         self.pos = pos
         self.data = data.tank_base
@@ -822,9 +833,9 @@ class Turret:
     def __init__(self, screen: pygame.Surface, parent_tank: Tank, data: TankTurret, angle: float = 0, size: int = -1):
         self.screen = screen
         self.tank = parent_tank
-        self.fire = Fire(screen, self, pygame.image.load("../images/Fire.png"))
+        self.fire = Fire(screen, self, load("Fire.png"))
         self.data = data
-        self.image = pygame.image.load(
+        self.image = load(
             list(filter(lambda image: image.team == parent_tank.base.team, data.images))[0].url)
         self.pos_offset = (0, 0)
         self.angle_offset = random.randrange(360) if self.data.name == "Hedgehog" else angle
@@ -910,7 +921,7 @@ class Projectile:
         self.size = size
         self.die = False
         src = self.tank.turret.data.projectile_image
-        self.image = None if src is None else pygame.image.load(src)
+        self.image = None if src is None else load(src)
 
     def draw(self):
         if self.image is not None:
@@ -976,7 +987,7 @@ class Map:
         self.game = game
         self.size = size
         self.grid: list[list[Cell]] = []
-        self.image = pygame.image.load("../images/Map.png")
+        self.image = load("Map.png")
 
         n = self.get_rows()
         for x in range(0, n):
@@ -1180,7 +1191,7 @@ class StateManager:
 
     def title_screen(self):
         self.screen.fill((59, 76, 99))
-        title = pygame.image.load("../images/Title.png")
+        title = load("Title.png")
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
         button_text = font.render("Press 'SPACE' to Start", True, (255, 255, 255))
         self.screen.blit(button_text, (self.screen.get_width() // 2 - button_text.get_width() // 2, 435))
@@ -1191,7 +1202,7 @@ class StateManager:
         self.screen.fill((59, 76, 99))
         title = font.render("Help", True, (255, 201, 14))
         self.screen.blit(title, (575, 25))
-        description = pygame.image.load("../images/2023-06-15 (1).png")
+        description = load("2023-06-15 (1).png")
         self.screen.blit(description, (20, 5))
         back = font.render("Press 'B' to Go Back", True, (255, 255, 255))
         self.screen.blit(back, (525, 575))
@@ -1203,7 +1214,7 @@ class StateManager:
             color = (28, 237, 36)
 
         self.screen.fill((59, 76, 99))
-        title = pygame.image.load("../images/Game_Over.png")
+        title = load("Game_Over.png")
         win_text = font.render(f"{self.winner} Team Won!", True, color)
         self.screen.blit(title, (self.screen.get_width() // 2 - title.get_width() // 2, 200))
         self.screen.blit(win_text, (self.screen.get_width() // 2 - win_text.get_width() // 2, 200 + title.get_height() * 1.5))
